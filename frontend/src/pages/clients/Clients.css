@@ -1,0 +1,27 @@
+.client-form {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.client-form fieldset {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.client-form legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1a1a2e;
+  padding: 0 8px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}

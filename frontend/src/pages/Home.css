@@ -1,0 +1,39 @@
+.home {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.home-hero {
+  text-align: center;
+  color: #fff;
+}
+
+.home-hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.home-hero p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 32px;
+}
+
+.home-cta {
+  display: inline-block;
+  padding: 12px 32px;
+  background: #4361ee;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.home-cta:hover {
+  background: #3451d1;
+}
