@@ -89,6 +89,15 @@ function initTables() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
+  db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('meta_cpm', '7000')");
+
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_rank_keyword_date ON rank_records(keyword_id, recorded_date)');
   db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_slug ON clients(slug) WHERE slug IS NOT NULL AND slug != ""');
 }
