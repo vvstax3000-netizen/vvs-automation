@@ -141,11 +141,11 @@ export default function NaverAds() {
             {d.topCreatives?.length > 0 && (
               <div className="top-creatives">
                 <h4>상위 소재 Top 3</h4>
-                <table className="data-table">
+                <table className="data-table creative-table">
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>소재명</th>
+                      <th>소재</th>
                       <th>노출수</th>
                       <th>클릭수</th>
                       <th>CTR</th>
@@ -155,7 +155,16 @@ export default function NaverAds() {
                     {d.topCreatives.map((c, i) => (
                       <tr key={i}>
                         <td>{i + 1}</td>
-                        <td>{c.name}</td>
+                        <td className="creative-cell">
+                          <div className="creative-thumbs">
+                            {c.images?.length ? c.images.map((img, j) => (
+                              <img key={j} src={img} alt="" className="creative-thumb" />
+                            )) : (
+                              <div className="creative-thumb creative-thumb-empty" />
+                            )}
+                          </div>
+                          <span>{c.name}</span>
+                        </td>
                         <td>{c.impressions.toLocaleString()}</td>
                         <td>{c.clicks.toLocaleString()}</td>
                         <td>{c.ctr}%</td>

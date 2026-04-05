@@ -56,9 +56,16 @@ router.get('/:clientId/insights', async (req, res) => {
       const ctr = impressions > 0 ? ((clicks / impressions) * 100) : 0;
       const cpc = clicks > 0 ? Math.round(cost / clicks) : 0;
 
+      // Sort campaigns by cost desc, pick top 3 with data for creative lookup
+      const campsWithStats = camps
+        .map((c, i) => ({ ...c, _cost: stats[i]?.salesAmt || 0 }))
+        .filter(c => c._cost > 0)
+        .sort((a, b) => b._cost - a._cost)
+        .slice(0, 3);
+
       let topCreatives = [];
       try {
-        topCreatives = await getTopCreatives(apiLicense, apiSecret, customerId, camps, since, until);
+        topCreatives = await getTopCreatives(apiLicense, apiSecret, customerId, campsWithStats, since, until);
       } catch (err) {
         console.error(`[NaverAds] Top creatives error for ${type}:`, err.message);
       }
@@ -81,15 +88,46 @@ router.get('/:clientId/insights', async (req, res) => {
   }
 });
 
+const SEARCHAD_IMG_BASE = 'https://searchad-phinf.pstatic.net';
+
+function getAdName(ad) {
+  if (ad?.ad?.description) return ad.ad.description;
+  if (ad?.referenceData?.ad?.title) {
+    const sub = ad.referenceData.ad.subTitle;
+    return sub ? `${ad.referenceData.ad.title} - ${sub}` : ad.referenceData.ad.title;
+  }
+  if (ad?.referenceData?.name) return ad.referenceData.name;
+  if (ad?.ad?.info?.name) return ad.ad.info.name;
+  if (ad?.ad?.pc?.headline) return ad.ad.pc.headline;
+  if (ad?.ad?.headline) return ad.ad.headline;
+  if (ad?.adAttr?.headline) return ad.adAttr.headline;
+  return null;
+}
+
+function getAdImages(ad) {
+  // LOCAL_AD: ad.images[] are relative paths
+  if (ad?.ad?.images?.length) {
+    return ad.ad.images.map(img => SEARCHAD_IMG_BASE + img);
+  }
+  // PLACE_AD (SMB): referenceData.ad.imageUrl is full URL
+  if (ad?.referenceData?.ad?.imageUrl) {
+    return [ad.referenceData.ad.imageUrl];
+  }
+  return [];
+}
+
 async function getTopCreatives(apiLicense, apiSecret, customerId, campaigns, since, until) {
   const allAds = [];
 
-  for (const camp of campaigns.slice(0, 5)) {
+  for (const camp of campaigns) {
     try {
       const adGroups = toArray(await getAdGroups(apiLicense, apiSecret, customerId, camp.nccCampaignId));
 
-      for (const ag of adGroups.slice(0, 5)) {
+      for (const ag of adGroups.slice(0, 3)) {
         const ads = toArray(await getAds(apiLicense, apiSecret, customerId, ag.nccAdgroupId));
+        for (const ad of ads) {
+          ad._campaignName = camp.name; // attach for fallback
+        }
         allAds.push(...ads);
       }
     } catch (err) {
@@ -99,18 +137,23 @@ async function getTopCreatives(apiLicense, apiSecret, customerId, campaigns, sin
 
   if (!allAds.length) return [];
 
-  const adIds = allAds.map(a => a.nccAdId).slice(0, 20);
+  const adIds = allAds.map(a => a.nccAdId).slice(0, 30);
   const adStats = toArray(await getAdCreativeStats(apiLicense, apiSecret, customerId, adIds, since, until));
 
-  const merged = adStats.map(stat => {
-    const ad = allAds.find(a => a.nccAdId === stat.id);
-    return {
-      name: ad?.ad?.pc?.headline || ad?.ad?.headline || ad?.adAttr?.headline || `Ad ${stat.id?.substring(0, 8)}`,
-      impressions: stat.impCnt || 0,
-      clicks: stat.clkCnt || 0,
-      ctr: stat.impCnt > 0 ? (((stat.clkCnt || 0) / stat.impCnt) * 100).toFixed(2) : '0.00'
-    };
-  });
+  const merged = adStats
+    .filter(stat => stat.impCnt > 0 || stat.clkCnt > 0)
+    .map(stat => {
+      const ad = allAds.find(a => a.nccAdId === stat.id);
+      const name = getAdName(ad) || ad?._campaignName || `소재 ${stat.id?.substring(14, 26)}`;
+      const images = getAdImages(ad);
+      return {
+        name,
+        images,
+        impressions: stat.impCnt || 0,
+        clicks: stat.clkCnt || 0,
+        ctr: stat.impCnt > 0 ? (((stat.clkCnt || 0) / stat.impCnt) * 100).toFixed(2) : '0.00'
+      };
+    });
 
   merged.sort((a, b) => b.clicks - a.clicks);
   return merged.slice(0, 3);
