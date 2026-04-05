@@ -1,0 +1,19 @@
+.rank-public {
+  max-width: 900px;
+}
+
+.rank-public-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.rank-public-header h1 {
+  font-size: 1.8rem;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.rank-public-header p {
+  color: #999;
+  font-size: 0.95rem;
+}

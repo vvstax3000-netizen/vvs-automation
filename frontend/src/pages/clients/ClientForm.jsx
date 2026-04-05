@@ -9,6 +9,7 @@ const initialForm = {
   contract_start: '', contract_end: '',
   naver_api_license: '', naver_api_secret: '', naver_customer_id: '',
   meta_ad_account_id: '',
+  place_name: '', slug: '',
 }
 
 export default function ClientForm() {
@@ -25,19 +26,13 @@ export default function ClientForm() {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
-        .then(data => setForm({
-          company_name: data.company_name || '',
-          industry: data.industry || '',
-          address: data.address || '',
-          contact_person: data.contact_person || '',
-          phone: data.phone || '',
-          contract_start: data.contract_start || '',
-          contract_end: data.contract_end || '',
-          naver_api_license: data.naver_api_license || '',
-          naver_api_secret: data.naver_api_secret || '',
-          naver_customer_id: data.naver_customer_id || '',
-          meta_ad_account_id: data.meta_ad_account_id || '',
-        }))
+        .then(data => {
+          const updated = {}
+          for (const key of Object.keys(initialForm)) {
+            updated[key] = data[key] || ''
+          }
+          setForm(updated)
+        })
         .catch(() => setError('데이터를 불러올 수 없습니다'))
     }
   }, [id])
@@ -107,6 +102,22 @@ export default function ClientForm() {
             <div className="form-group">
               <label>계약 종료일</label>
               <input type="date" name="contract_end" value={form.contract_end} onChange={handleChange} />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>플레이스 순위 추적</legend>
+          <div className="form-row">
+            <div className="form-group">
+              <label>네이버 플레이스명 (검색 결과에 표시되는 정확한 업체명)</label>
+              <input name="place_name" value={form.place_name} onChange={handleChange}
+                placeholder="예: 돈치킨 부평점" />
+            </div>
+            <div className="form-group">
+              <label>공유 슬러그 (순위 공유 URL에 사용)</label>
+              <input name="slug" value={form.slug} onChange={handleChange}
+                placeholder="예: donchicken" />
             </div>
           </div>
         </fieldset>
