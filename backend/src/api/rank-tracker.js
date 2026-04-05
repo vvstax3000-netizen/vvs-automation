@@ -122,7 +122,7 @@ router.post('/:clientId/search-volume', async (req, res) => {
   if (!client) return res.status(404).json({ error: '광고주를 찾을 수 없습니다' });
 
   if (!client.naver_api_license || !client.naver_api_secret || !client.naver_customer_id) {
-    return res.status(400).json({ error: '네이버 검색광고 API 키가 설정되지 않았습니다' });
+    return res.status(400).json({ error: '광고주의 네이버 API 키가 설정되지 않았습니다' });
   }
 
   const keywords = queryAll('SELECT * FROM keywords WHERE client_id = ?', [req.params.clientId]);

@@ -9,6 +9,7 @@ const rankTrackerRoutes = require('./api/rank-tracker');
 const publicRoutes = require('./api/public');
 const settingsRoutes = require('./api/settings');
 const metaAdsRoutes = require('./api/meta-ads');
+const naverAdsRoutes = require('./api/naver-ads');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,6 +23,7 @@ app.use('/api/rank-tracker', rankTrackerRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/meta-ads', metaAdsRoutes);
+app.use('/api/naver-ads', naverAdsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

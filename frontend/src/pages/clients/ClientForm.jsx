@@ -25,7 +25,10 @@ export default function ClientForm() {
       fetch(`/api/clients/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('서버 응답 오류')
+          return res.json()
+        })
         .then(data => {
           const updated = {}
           for (const key of Object.keys(initialForm)) {
@@ -126,17 +129,20 @@ export default function ClientForm() {
           <legend>네이버 검색광고 API</legend>
           <div className="form-row">
             <div className="form-group">
-              <label>API License</label>
-              <input name="naver_api_license" value={form.naver_api_license} onChange={handleChange} />
+              <label>API License (액세스라이선스)</label>
+              <input name="naver_api_license" value={form.naver_api_license} onChange={handleChange}
+                placeholder="0100000000..." />
             </div>
             <div className="form-group">
-              <label>API Secret</label>
-              <input name="naver_api_secret" value={form.naver_api_secret} onChange={handleChange} type="password" />
+              <label>API Secret (비밀키)</label>
+              <input name="naver_api_secret" value={form.naver_api_secret} onChange={handleChange}
+                type="password" placeholder="AQAAAABYuQ..." />
             </div>
           </div>
           <div className="form-group">
-            <label>Customer ID</label>
-            <input name="naver_customer_id" value={form.naver_customer_id} onChange={handleChange} />
+            <label>Customer ID (광고계정 ID)</label>
+            <input name="naver_customer_id" value={form.naver_customer_id} onChange={handleChange}
+              placeholder="예: 1234567" />
           </div>
         </fieldset>
 

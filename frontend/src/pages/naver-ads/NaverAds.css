@@ -1,0 +1,98 @@
+/* Settings */
+.naver-settings-bar {
+  margin-bottom: 12px;
+}
+
+.naver-settings-panel {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Controls */
+.naver-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.naver-controls select,
+.naver-controls input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.naver-controls select {
+  min-width: 250px;
+}
+
+/* Ad type section */
+.ad-type-section {
+  margin-bottom: 28px;
+}
+
+.ad-type-section h3 {
+  font-size: 1.1rem;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #eee;
+}
+
+/* Stats grid */
+.ad-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ad-stat-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ad-stat-card.accent {
+  border-left: 3px solid #2ecc71;
+}
+
+.ad-stat-label {
+  font-size: 0.78rem;
+  color: #999;
+  font-weight: 500;
+}
+
+.ad-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+/* Top creatives */
+.top-creatives {
+  margin-top: 8px;
+}
+
+.top-creatives h4 {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+/* Field hint */
+.field-hint {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 4px;
+}

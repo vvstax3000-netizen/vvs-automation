@@ -131,9 +131,9 @@ function queryOne(sql, params = []) {
 
 function run(sql, params = []) {
   db.run(sql, params);
-  save();
-  const lastId = db.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0];
   const changes = db.getRowsModified();
+  const lastId = db.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0];
+  save();
   return { lastInsertRowid: lastId, changes };
 }
 
