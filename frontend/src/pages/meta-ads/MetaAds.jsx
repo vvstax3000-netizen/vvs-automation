@@ -16,7 +16,7 @@ export default function MetaAds() {
   const { token } = useAuth()
   const [clients, setClients] = useState([])
   const [selectedClientId, setSelectedClientId] = useState('')
-  const [settings, setSettings] = useState({ meta_api_token: '', meta_cpm: '7000' })
+  const [settings, setSettings] = useState({ meta_api_token: '', meta_ad_account_id: '', meta_cpm: '7000' })
   const [showSettings, setShowSettings] = useState(false)
   const [saving, setSaving] = useState(false)
   const [insights, setInsights] = useState(null)
@@ -46,7 +46,11 @@ export default function MetaAds() {
     try {
       await fetch('/api/settings', {
         method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          meta_api_token: settings.meta_api_token,
+          meta_ad_account_id: settings.meta_ad_account_id,
+          meta_cpm: settings.meta_cpm
+        })
       })
       alert('설정이 저장되었습니다')
     } finally {
@@ -101,7 +105,15 @@ export default function MetaAds() {
                 placeholder="Meta Marketing API Access Token"
               />
             </div>
-            <div className="form-group" style={{ maxWidth: 200 }}>
+            <div className="form-group" style={{ maxWidth: 250 }}>
+              <label>광고 계정 ID</label>
+              <input
+                value={settings.meta_ad_account_id || ''}
+                onChange={e => setSettings(s => ({ ...s, meta_ad_account_id: e.target.value }))}
+                placeholder="act_123456789"
+              />
+            </div>
+            <div className="form-group" style={{ maxWidth: 160 }}>
               <label>마크업 CPM (원)</label>
               <input
                 type="number"
@@ -114,6 +126,7 @@ export default function MetaAds() {
               {saving ? '저장 중...' : '설정 저장'}
             </button>
           </div>
+          <p className="field-hint">광고 계정 ID는 전체 비즈니스 매니저의 계정 ID입니다. 광고주별 캠페인 ID는 광고주 관리에서 설정합니다.</p>
         </div>
       )}
 
@@ -123,7 +136,7 @@ export default function MetaAds() {
           <label>광고주</label>
           <select value={selectedClientId} onChange={e => setSelectedClientId(e.target.value)}>
             <option value="">-- 광고주를 선택하세요 --</option>
-            {clients.filter(c => c.meta_ad_account_id).map(c => (
+            {clients.filter(c => c.meta_campaign_ids).map(c => (
               <option key={c.id} value={c.id}>{c.company_name}</option>
             ))}
           </select>
@@ -152,6 +165,7 @@ export default function MetaAds() {
           <p className="insights-period">
             {insights.dateStart} ~ {insights.dateEnd}
             <span className="insights-cpm">적용 CPM: {Number(insights.cpm).toLocaleString()}원</span>
+            {insights.campaignCount > 1 && <span className="insights-cpm">캠페인 {insights.campaignCount}개 합산</span>}
           </p>
           <div className="insights-grid">
             <div className="insight-card">

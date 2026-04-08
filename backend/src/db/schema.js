@@ -59,6 +59,7 @@ function initTables() {
       naver_api_secret TEXT,
       naver_customer_id TEXT,
       meta_ad_account_id TEXT,
+      meta_campaign_ids TEXT,
       place_name TEXT,
       slug TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -109,6 +110,7 @@ function migrate() {
   if (clientCols.length) {
     if (!clientCols.includes('place_name')) db.run('ALTER TABLE clients ADD COLUMN place_name TEXT');
     if (!clientCols.includes('slug')) db.run('ALTER TABLE clients ADD COLUMN slug TEXT');
+    if (!clientCols.includes('meta_campaign_ids')) db.run('ALTER TABLE clients ADD COLUMN meta_campaign_ids TEXT');
   }
 
   const rankCols = getColumns('rank_records');

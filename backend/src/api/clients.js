@@ -22,7 +22,7 @@ router.post('/', (req, res) => {
     company_name, industry, address, contact_person, phone,
     contract_start, contract_end,
     naver_api_license, naver_api_secret, naver_customer_id,
-    meta_ad_account_id, place_name, slug
+    meta_campaign_ids, place_name, slug
   } = req.body;
 
   if (!company_name) {
@@ -37,12 +37,12 @@ router.post('/', (req, res) => {
   const result = run(
     `INSERT INTO clients (company_name, industry, address, contact_person, phone,
       contract_start, contract_end, naver_api_license, naver_api_secret, naver_customer_id,
-      meta_ad_account_id, place_name, slug)
+      meta_campaign_ids, place_name, slug)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [company_name, industry || '', address || '', contact_person || '', phone || '',
      contract_start || '', contract_end || '',
      naver_api_license || '', naver_api_secret || '', naver_customer_id || '',
-     meta_ad_account_id || '', place_name || null, slug || null]
+     meta_campaign_ids || '', place_name || null, slug || null]
   );
 
   const client = queryOne('SELECT * FROM clients WHERE id = ?', [result.lastInsertRowid]);
@@ -54,7 +54,7 @@ router.put('/:id', (req, res) => {
     company_name, industry, address, contact_person, phone,
     contract_start, contract_end,
     naver_api_license, naver_api_secret, naver_customer_id,
-    meta_ad_account_id, place_name, slug
+    meta_campaign_ids, place_name, slug
   } = req.body;
 
   if (!company_name) {
@@ -71,12 +71,12 @@ router.put('/:id', (req, res) => {
       company_name=?, industry=?, address=?, contact_person=?, phone=?,
       contract_start=?, contract_end=?,
       naver_api_license=?, naver_api_secret=?, naver_customer_id=?,
-      meta_ad_account_id=?, place_name=?, slug=?, updated_at=CURRENT_TIMESTAMP
+      meta_campaign_ids=?, place_name=?, slug=?, updated_at=CURRENT_TIMESTAMP
     WHERE id=?`,
     [company_name, industry || '', address || '', contact_person || '', phone || '',
      contract_start || '', contract_end || '',
      naver_api_license || '', naver_api_secret || '', naver_customer_id || '',
-     meta_ad_account_id || '', place_name || null, slug || null, req.params.id]
+     meta_campaign_ids || '', place_name || null, slug || null, req.params.id]
   );
 
   if (result.changes === 0) {

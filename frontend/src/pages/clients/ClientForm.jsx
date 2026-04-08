@@ -8,7 +8,7 @@ const initialForm = {
   contact_person: '', phone: '',
   contract_start: '', contract_end: '',
   naver_api_license: '', naver_api_secret: '', naver_customer_id: '',
-  meta_ad_account_id: '',
+  meta_campaign_ids: '',
   place_name: '', slug: '',
 }
 
@@ -149,9 +149,11 @@ export default function ClientForm() {
         <fieldset>
           <legend>메타 광고</legend>
           <div className="form-group">
-            <label>메타 광고 계정 ID</label>
-            <input name="meta_ad_account_id" value={form.meta_ad_account_id} onChange={handleChange} />
+            <label>캠페인 ID (여러 개는 쉼표로 구분)</label>
+            <input name="meta_campaign_ids" value={form.meta_campaign_ids} onChange={handleChange}
+              placeholder="예: 23456789012345, 23456789012346" />
           </div>
+          <p className="field-hint">메타 광고 계정 ID와 API 토큰은 메타 광고 메뉴의 설정에서 공통으로 관리합니다.</p>
         </fieldset>
 
         <div className="form-actions">
