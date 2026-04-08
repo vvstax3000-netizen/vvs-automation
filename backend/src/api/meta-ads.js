@@ -247,11 +247,25 @@ router.get('/:clientId/ads', async (req, res) => {
     for (const campId of camp.ids) {
       try {
         const data = await metaGet(
-          `${campId}/ads?fields=id,name,status,creative{thumbnail_url,image_url,title,body}&limit=100`,
+          `${campId}/ads?fields=id,name,status,creative&limit=100`,
           accessToken
         );
         for (const ad of (data.data || [])) {
           try {
+            // Fetch high-res thumbnail via creative ID
+            let thumbnailUrl = null;
+            if (ad.creative?.id) {
+              try {
+                const cr = await metaGet(
+                  `${ad.creative.id}?fields=thumbnail_url,title,body&thumbnail_width=480&thumbnail_height=480`,
+                  accessToken
+                );
+                thumbnailUrl = cr.thumbnail_url || null;
+                if (!ad._title) ad._title = cr.title || '';
+                if (!ad._body) ad._body = cr.body || '';
+              } catch (e) { /* skip */ }
+            }
+
             const ins = await metaGet(
               `${ad.id}/insights?fields=impressions,clicks,spend,reach,actions&time_range=${tr}`,
               accessToken
@@ -263,16 +277,11 @@ router.get('/:clientId/ads', async (req, res) => {
             for (const a of (r.actions || [])) {
               actionMap[a.action_type] = (actionMap[a.action_type] || 0) + (parseInt(a.value) || 0);
             }
-            // Prefer image_url (high-res), fallback to thumbnail with size upgrade
-            let imageUrl = ad.creative?.image_url || null;
-            if (!imageUrl && ad.creative?.thumbnail_url) {
-              imageUrl = ad.creative.thumbnail_url.replace(/p\d+x\d+/, 'p480x480');
-            }
             ads.push({
               id: ad.id, name: ad.name, status: ad.status,
-              thumbnailUrl: imageUrl || ad.creative?.thumbnail_url || null,
-              title: ad.creative?.title || '',
-              body: ad.creative?.body || '',
+              thumbnailUrl,
+              title: ad._title || '',
+              body: ad._body || '',
               impressions: imp, clicks: clk,
               spend: parseFloat(r.spend) || 0, reach: parseInt(r.reach) || 0,
               ctr: imp > 0 ? ((clk / imp) * 100).toFixed(2) : '0.00',
