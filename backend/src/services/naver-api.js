@@ -17,7 +17,7 @@ function naverHeaders(method, path, apiLicense, apiSecret, customerId) {
 }
 
 async function naverApiCall(method, path, apiLicense, apiSecret, customerId, params = {}) {
-  const qs = new URLSearchParams(params).toString();
+  const qs = new URLSearchParams(params).toString().replace(/\+/g, '%20');
   const url = `https://api.searchad.naver.com${path}${qs ? '?' + qs : ''}`;
   const headers = naverHeaders(method, path, apiLicense, apiSecret, customerId);
 
@@ -30,25 +30,35 @@ async function naverApiCall(method, path, apiLicense, apiSecret, customerId, par
   return res.json();
 }
 
-// Get keyword search volume
+// Get keyword search volume (one API call per keyword)
 async function getKeywordStats(keywordList, apiLicense, apiSecret, customerId) {
   if (!apiLicense || !apiSecret || !customerId) return null;
 
-  try {
-    const data = await naverApiCall('GET', '/keywordstool', apiLicense, apiSecret, customerId, {
-      hintKeywords: keywordList.join(','),
-      showDetail: '1'
-    });
-    return (data.keywordList || []).map(item => ({
-      keyword: item.relKeyword,
-      monthlyPc: parseVolume(item.monthlyPcQcCnt),
-      monthlyMobile: parseVolume(item.monthlyMobileQcCnt),
-      total: parseVolume(item.monthlyPcQcCnt) + parseVolume(item.monthlyMobileQcCnt)
-    }));
-  } catch (err) {
-    console.error('[NaverAPI] getKeywordStats error:', err.message);
-    return null;
+  const results = [];
+  for (const keyword of keywordList) {
+    try {
+      const queryKeyword = keyword.replace(/\s+/g, '');
+      const data = await naverApiCall('GET', '/keywordstool', apiLicense, apiSecret, customerId, {
+        hintKeywords: queryKeyword,
+        showDetail: '1'
+      });
+      const match = (data.keywordList || []).find(
+        item => item.relKeyword === queryKeyword || item.relKeyword === keyword
+      );
+      if (match) {
+        results.push({
+          keyword: keyword,
+          monthlyPc: parseVolume(match.monthlyPcQcCnt),
+          monthlyMobile: parseVolume(match.monthlyMobileQcCnt),
+          total: parseVolume(match.monthlyPcQcCnt) + parseVolume(match.monthlyMobileQcCnt)
+        });
+      }
+    } catch (err) {
+      console.error(`[NaverAPI] getKeywordStats error for "${keyword}":`, err.message);
+    }
   }
+
+  return results.length ? results : null;
 }
 
 // Get all campaigns

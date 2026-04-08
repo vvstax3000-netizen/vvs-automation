@@ -36,6 +36,9 @@ export default function RankHistory({ keywordId, keyword, onClose, token, isPubl
                 <tr>
                   <th>날짜</th>
                   <th>순위</th>
+                  <th>변동</th>
+                  <th>방문자리뷰</th>
+                  <th>블로그리뷰</th>
                 </tr>
               </thead>
               <tbody>
@@ -49,6 +52,15 @@ export default function RankHistory({ keywordId, keyword, onClose, token, isPubl
                         <span className="rank-badge rank-none">미노출</span>
                       )}
                     </td>
+                    <td>
+                      {r.change != null ? (
+                        r.change > 0 ? <span className="rank-change rank-up">&#9650;{r.change}</span> :
+                        r.change < 0 ? <span className="rank-change rank-down">&#9660;{Math.abs(r.change)}</span> :
+                        <span className="rank-change rank-same">-</span>
+                      ) : ''}
+                    </td>
+                    <td>{r.visitor_reviews || '-'}</td>
+                    <td>{r.blog_reviews || '-'}</td>
                   </tr>
                 ))}
               </tbody>

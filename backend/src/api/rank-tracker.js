@@ -7,7 +7,7 @@ const { getKeywordStats } = require('../services/naver-api');
 const router = express.Router();
 router.use(authMiddleware);
 
-// List keywords with latest ranks
+// List keywords with latest ranks + prev rank + reviews
 router.get('/:clientId/keywords', (req, res) => {
   const keywords = queryAll(`
     SELECT k.*,
@@ -16,13 +16,63 @@ router.get('/:clientId/keywords', (req, res) => {
        ORDER BY rr.recorded_date DESC LIMIT 1) as latest_rank,
       (SELECT rr.recorded_date FROM rank_records rr
        WHERE rr.keyword_id = k.id
-       ORDER BY rr.recorded_date DESC LIMIT 1) as latest_date
+       ORDER BY rr.recorded_date DESC LIMIT 1) as latest_date,
+      (SELECT rr.rank FROM rank_records rr
+       WHERE rr.keyword_id = k.id
+       ORDER BY rr.recorded_date DESC LIMIT 1 OFFSET 1) as prev_rank,
+      (SELECT rr.visitor_reviews FROM rank_records rr
+       WHERE rr.keyword_id = k.id
+       ORDER BY rr.recorded_date DESC LIMIT 1) as visitor_reviews,
+      (SELECT rr.blog_reviews FROM rank_records rr
+       WHERE rr.keyword_id = k.id
+       ORDER BY rr.recorded_date DESC LIMIT 1) as blog_reviews,
+      (SELECT rr.visitor_reviews FROM rank_records rr
+       WHERE rr.keyword_id = k.id
+       ORDER BY rr.recorded_date DESC LIMIT 1 OFFSET 1) as prev_visitor_reviews,
+      (SELECT rr.blog_reviews FROM rank_records rr
+       WHERE rr.keyword_id = k.id
+       ORDER BY rr.recorded_date DESC LIMIT 1 OFFSET 1) as prev_blog_reviews
     FROM keywords k
     WHERE k.client_id = ?
     ORDER BY k.created_at ASC
   `, [req.params.clientId]);
 
   res.json(keywords);
+});
+
+// Weekly review stats for a client
+router.get('/:clientId/review-stats', (req, res) => {
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+  // Get first keyword's latest and week-ago review counts
+  const latest = queryOne(`
+    SELECT rr.visitor_reviews, rr.blog_reviews FROM rank_records rr
+    JOIN keywords k ON rr.keyword_id = k.id
+    WHERE k.client_id = ? AND rr.visitor_reviews > 0
+    ORDER BY rr.recorded_date DESC LIMIT 1
+  `, [req.params.clientId]);
+
+  const weekOld = queryOne(`
+    SELECT rr.visitor_reviews, rr.blog_reviews FROM rank_records rr
+    JOIN keywords k ON rr.keyword_id = k.id
+    WHERE k.client_id = ? AND rr.recorded_date <= ? AND rr.visitor_reviews > 0
+    ORDER BY rr.recorded_date DESC LIMIT 1
+  `, [req.params.clientId, weekAgoStr]);
+
+  const visitorNow = latest?.visitor_reviews || 0;
+  const blogNow = latest?.blog_reviews || 0;
+  const visitorWeekAgo = weekOld?.visitor_reviews || 0;
+  const blogWeekAgo = weekOld?.blog_reviews || 0;
+
+  res.json({
+    visitorReviews: visitorNow,
+    blogReviews: blogNow,
+    weeklyVisitorChange: visitorWeekAgo > 0 ? visitorNow - visitorWeekAgo : 0,
+    weeklyBlogChange: blogWeekAgo > 0 ? blogNow - blogWeekAgo : 0
+  });
 });
 
 // Add keywords (multiple)
@@ -70,15 +120,26 @@ router.put('/keywords/:id/memo', (req, res) => {
   res.json({ message: '메모가 저장되었습니다' });
 });
 
-// Get daily rank history
+// Get daily rank history with changes + reviews
 router.get('/keywords/:id/history', (req, res) => {
   const records = queryAll(`
-    SELECT rank, recorded_date
+    SELECT rank, visitor_reviews, blog_reviews, recorded_date
     FROM rank_records
     WHERE keyword_id = ?
     ORDER BY recorded_date DESC
     LIMIT 90
   `, [req.params.id]);
+
+  // Calculate changes
+  for (let i = 0; i < records.length; i++) {
+    const curr = records[i];
+    const prev = records[i + 1]; // older record
+    if (prev && curr.rank && prev.rank) {
+      curr.change = prev.rank - curr.rank; // positive = improved
+    } else {
+      curr.change = null;
+    }
+  }
 
   res.json(records);
 });
@@ -99,13 +160,15 @@ router.post('/:clientId/refresh', async (req, res) => {
     const kw = keywords[i];
     try {
       const crawled = await crawlNaverPlace(kw.keyword);
-      const rank = findRank(crawled, client.place_name);
+      const { rank, visitorReviews, blogReviews } = findRank(crawled, client.place_name);
 
       run('DELETE FROM rank_records WHERE keyword_id = ? AND recorded_date = ?', [kw.id, today]);
-      run('INSERT INTO rank_records (keyword_id, rank, recorded_date) VALUES (?, ?, ?)',
-        [kw.id, rank, today]);
+      run(
+        'INSERT INTO rank_records (keyword_id, rank, visitor_reviews, blog_reviews, recorded_date) VALUES (?, ?, ?, ?, ?)',
+        [kw.id, rank, visitorReviews, blogReviews, today]
+      );
 
-      results.push({ keyword_id: kw.id, keyword: kw.keyword, rank });
+      results.push({ keyword_id: kw.id, keyword: kw.keyword, rank, visitorReviews, blogReviews });
 
       if (i < keywords.length - 1) await randomDelay();
     } catch (err) {

@@ -72,7 +72,14 @@ export default function RankView() {
                 <td>
                   {kw.latest_date ? (
                     kw.latest_rank ? (
-                      <span className={`rank-badge ${getRankClass(kw.latest_rank)}`}>{kw.latest_rank}위</span>
+                      <span className="rank-with-change">
+                        <span className={`rank-badge ${getRankClass(kw.latest_rank)}`}>{kw.latest_rank}위</span>
+                        {kw.prev_rank && kw.latest_rank !== kw.prev_rank && (
+                          kw.prev_rank > kw.latest_rank
+                            ? <span className="rank-change rank-up">&#9650;{kw.prev_rank - kw.latest_rank}</span>
+                            : <span className="rank-change rank-down">&#9660;{kw.latest_rank - kw.prev_rank}</span>
+                        )}
+                      </span>
                     ) : (
                       <span className="rank-badge rank-none">미노출</span>
                     )

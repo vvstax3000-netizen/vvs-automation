@@ -17,13 +17,13 @@ async function refreshAllRanks() {
   for (const kw of keywords) {
     try {
       const results = await crawlNaverPlace(kw.keyword);
-      const rank = findRank(results, kw.place_name);
+      const { rank, visitorReviews, blogReviews } = findRank(results, kw.place_name);
 
       run('DELETE FROM rank_records WHERE keyword_id = ? AND recorded_date = ?', [kw.id, today]);
-      run('INSERT INTO rank_records (keyword_id, rank, recorded_date) VALUES (?, ?, ?)',
-        [kw.id, rank, today]);
+      run('INSERT INTO rank_records (keyword_id, rank, visitor_reviews, blog_reviews, recorded_date) VALUES (?, ?, ?, ?, ?)',
+        [kw.id, rank, visitorReviews, blogReviews, today]);
 
-      console.log(`[CRON] ${kw.keyword}: ${rank ? rank + '위' : '미노출'}`);
+      console.log(`[CRON] ${kw.keyword}: ${rank ? rank + '위' : '미노출'} (리뷰: ${visitorReviews}/${blogReviews})`);
       await randomDelay();
     } catch (err) {
       console.error(`[CRON] Error for "${kw.keyword}":`, err.message);

@@ -6,9 +6,14 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const GRAPHQL_QUERY = `query getPlacesList($input: PlacesInput) {
   businesses: places(input: $input) {
     total
-    items { id name }
+    items { id name visitorReviewCount blogCafeReviewCount }
   }
 }`;
+
+function parseCount(val) {
+  if (!val) return 0;
+  return parseInt(String(val).replace(/,/g, ''), 10) || 0;
+}
 
 function randomDelay() {
   const ms = 2000 + Math.random() * 3000;
@@ -51,7 +56,9 @@ async function crawlNaverPlace(keyword) {
         allResults.push({
           rank: start + i,
           name: items[i].name || '',
-          id: items[i].id || ''
+          id: items[i].id || '',
+          visitorReviews: parseCount(items[i].visitorReviewCount),
+          blogReviews: parseCount(items[i].blogCafeReviewCount)
         });
       }
 
@@ -67,11 +74,17 @@ async function crawlNaverPlace(keyword) {
 }
 
 function findRank(results, placeName) {
-  if (!placeName) return null;
+  if (!placeName) return { rank: null, placeId: null, visitorReviews: 0, blogReviews: 0 };
   const found = results.find(r =>
     r.name.includes(placeName) || placeName.includes(r.name)
   );
-  return found ? found.rank : null;
+  if (!found) return { rank: null, placeId: null, visitorReviews: 0, blogReviews: 0 };
+  return {
+    rank: found.rank,
+    placeId: found.id,
+    visitorReviews: found.visitorReviews || 0,
+    blogReviews: found.blogReviews || 0
+  };
 }
 
 module.exports = { crawlNaverPlace, findRank, randomDelay };

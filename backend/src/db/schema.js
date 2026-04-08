@@ -83,6 +83,8 @@ function initTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       keyword_id INTEGER NOT NULL,
       rank INTEGER,
+      visitor_reviews INTEGER DEFAULT 0,
+      blog_reviews INTEGER DEFAULT 0,
       recorded_date DATE NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE CASCADE
@@ -103,15 +105,22 @@ function initTables() {
 }
 
 function migrate() {
-  const result = db.exec('PRAGMA table_info(clients)');
-  if (!result.length) return;
-  const columns = result[0].values.map(row => row[1]);
-  if (!columns.includes('place_name')) {
-    db.run('ALTER TABLE clients ADD COLUMN place_name TEXT');
+  const clientCols = getColumns('clients');
+  if (clientCols.length) {
+    if (!clientCols.includes('place_name')) db.run('ALTER TABLE clients ADD COLUMN place_name TEXT');
+    if (!clientCols.includes('slug')) db.run('ALTER TABLE clients ADD COLUMN slug TEXT');
   }
-  if (!columns.includes('slug')) {
-    db.run('ALTER TABLE clients ADD COLUMN slug TEXT');
+
+  const rankCols = getColumns('rank_records');
+  if (rankCols.length) {
+    if (!rankCols.includes('visitor_reviews')) db.run('ALTER TABLE rank_records ADD COLUMN visitor_reviews INTEGER DEFAULT 0');
+    if (!rankCols.includes('blog_reviews')) db.run('ALTER TABLE rank_records ADD COLUMN blog_reviews INTEGER DEFAULT 0');
   }
+}
+
+function getColumns(table) {
+  const result = db.exec(`PRAGMA table_info(${table})`);
+  return result.length ? result[0].values.map(row => row[1]) : [];
 }
 
 function queryAll(sql, params = []) {

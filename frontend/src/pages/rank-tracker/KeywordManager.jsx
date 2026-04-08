@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import RankHistory from './RankHistory'
 
+function RankChange({ current, previous }) {
+  if (!current || !previous) return null
+  const diff = previous - current
+  if (diff > 0) return <span className="rank-change rank-up">&#9650;{diff}</span>
+  if (diff < 0) return <span className="rank-change rank-down">&#9660;{Math.abs(diff)}</span>
+  return <span className="rank-change rank-same">-</span>
+}
+
 export default function KeywordManager({ clientId }) {
   const { token } = useAuth()
   const [client, setClient] = useState(null)
   const [keywords, setKeywords] = useState([])
+  const [reviewStats, setReviewStats] = useState(null)
   const [newKeyword, setNewKeyword] = useState('')
   const [sortBy, setSortBy] = useState('default')
   const [refreshing, setRefreshing] = useState(false)
@@ -21,6 +30,7 @@ export default function KeywordManager({ clientId }) {
   useEffect(() => {
     fetchClient()
     fetchKeywords()
+    fetchReviewStats()
   }, [clientId])
 
   const fetchClient = async () => {
@@ -36,6 +46,11 @@ export default function KeywordManager({ clientId }) {
   const fetchKeywords = async () => {
     const res = await fetch(`/api/rank-tracker/${clientId}/keywords`, { headers })
     if (res.ok) setKeywords(await res.json())
+  }
+
+  const fetchReviewStats = async () => {
+    const res = await fetch(`/api/rank-tracker/${clientId}/review-stats`, { headers })
+    if (res.ok) setReviewStats(await res.json())
   }
 
   const addKeywords = async () => {
@@ -74,7 +89,7 @@ export default function KeywordManager({ clientId }) {
         method: 'POST', headers
       })
       const data = await res.json()
-      if (res.ok) fetchKeywords()
+      if (res.ok) { fetchKeywords(); fetchReviewStats() }
       else alert(data.error || '업데이트 실패')
     } finally {
       setRefreshing(false)
@@ -89,7 +104,7 @@ export default function KeywordManager({ clientId }) {
       const data = await res.json()
       if (res.ok) fetchKeywords()
       else alert(data.error || '검색량 조회 실패')
-    } catch (err) {
+    } catch {
       alert('검색량 조회 중 오류가 발생했습니다')
     }
   }
@@ -113,6 +128,8 @@ export default function KeywordManager({ clientId }) {
   }
 
   const sorted = sortKeywords(keywords, sortBy)
+  // Get review data from first keyword that has it
+  const reviewKw = keywords.find(k => k.visitor_reviews > 0)
 
   return (
     <div className="keyword-manager">
@@ -142,6 +159,46 @@ export default function KeywordManager({ clientId }) {
           </p>
         )}
       </div>
+
+      {/* Weekly review stats */}
+      {(reviewStats?.visitorReviews > 0 || reviewKw) && (
+        <div className="review-stats-row">
+          {reviewKw && (
+            <>
+              <div className="review-stat-card">
+                <span className="review-stat-label">방문자리뷰</span>
+                <span className="review-stat-value">{(reviewKw.visitor_reviews || 0).toLocaleString()}개</span>
+                {reviewKw.prev_visitor_reviews > 0 && reviewKw.visitor_reviews > reviewKw.prev_visitor_reviews && (
+                  <span className="review-stat-change rank-up">+{reviewKw.visitor_reviews - reviewKw.prev_visitor_reviews}</span>
+                )}
+              </div>
+              <div className="review-stat-card">
+                <span className="review-stat-label">블로그리뷰</span>
+                <span className="review-stat-value">{(reviewKw.blog_reviews || 0).toLocaleString()}개</span>
+                {reviewKw.prev_blog_reviews > 0 && reviewKw.blog_reviews > reviewKw.prev_blog_reviews && (
+                  <span className="review-stat-change rank-up">+{reviewKw.blog_reviews - reviewKw.prev_blog_reviews}</span>
+                )}
+              </div>
+            </>
+          )}
+          {reviewStats && (
+            <>
+              <div className="review-stat-card weekly">
+                <span className="review-stat-label">주간 방문자리뷰</span>
+                <span className="review-stat-value">
+                  {reviewStats.weeklyVisitorChange > 0 ? '+' : ''}{reviewStats.weeklyVisitorChange}
+                </span>
+              </div>
+              <div className="review-stat-card weekly">
+                <span className="review-stat-label">주간 블로그리뷰</span>
+                <span className="review-stat-value">
+                  {reviewStats.weeklyBlogChange > 0 ? '+' : ''}{reviewStats.weeklyBlogChange}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Add keywords */}
       <div className="add-keyword-section">
@@ -208,8 +265,11 @@ export default function KeywordManager({ clientId }) {
                 <td>
                   {kw.latest_date ? (
                     kw.latest_rank ? (
-                      <span className={`rank-badge ${getRankClass(kw.latest_rank)}`}>
-                        {kw.latest_rank}위
+                      <span className="rank-with-change">
+                        <span className={`rank-badge ${getRankClass(kw.latest_rank)}`}>
+                          {kw.latest_rank}위
+                        </span>
+                        <RankChange current={kw.latest_rank} previous={kw.prev_rank} />
                       </span>
                     ) : (
                       <span className="rank-badge rank-none">미노출</span>
