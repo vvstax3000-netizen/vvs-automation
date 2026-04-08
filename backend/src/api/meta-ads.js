@@ -52,7 +52,7 @@ router.get('/:clientId/insights', async (req, res) => {
   if (camp.error) return res.status(camp.status).json({ error: camp.error });
 
   try {
-    let totalImp = 0, totalReach = 0, totalClicks = 0, weightedFreq = 0;
+    let totalImp = 0, totalReach = 0, totalClicks = 0, totalSpend = 0, weightedFreq = 0;
     let dateStart = since, dateEnd = until;
     const tr = encodeURIComponent(JSON.stringify({ since, until }));
     const fields = 'impressions,reach,frequency,clicks,ctr,spend';
@@ -66,6 +66,7 @@ router.get('/:clientId/insights', async (req, res) => {
         totalImp += imp;
         totalReach += parseInt(r.reach) || 0;
         totalClicks += parseInt(r.clicks) || 0;
+        totalSpend += parseFloat(r.spend) || 0;
         weightedFreq += (parseFloat(r.frequency) || 0) * imp;
         if (r.date_start) dateStart = r.date_start;
         if (r.date_stop) dateEnd = r.date_stop;
@@ -80,6 +81,7 @@ router.get('/:clientId/insights', async (req, res) => {
     res.json({
       impressions: totalImp, reach: totalReach, frequency: frequency.toFixed(2),
       clicks: totalClicks, ctr: ctr.toFixed(2), cpc, totalCost, cpm,
+      actualSpend: Math.round(totalSpend),
       campaignCount: camp.ids.length, dateStart, dateEnd
     });
   } catch (err) {
@@ -245,7 +247,7 @@ router.get('/:clientId/ads', async (req, res) => {
     for (const campId of camp.ids) {
       try {
         const data = await metaGet(
-          `${campId}/ads?fields=id,name,status,creative{thumbnail_url,title,body}&limit=100`,
+          `${campId}/ads?fields=id,name,status,creative{thumbnail_url,image_url,title,body}&limit=100`,
           accessToken
         );
         for (const ad of (data.data || [])) {
@@ -261,9 +263,14 @@ router.get('/:clientId/ads', async (req, res) => {
             for (const a of (r.actions || [])) {
               actionMap[a.action_type] = (actionMap[a.action_type] || 0) + (parseInt(a.value) || 0);
             }
+            // Prefer image_url (high-res), fallback to thumbnail with size upgrade
+            let imageUrl = ad.creative?.image_url || null;
+            if (!imageUrl && ad.creative?.thumbnail_url) {
+              imageUrl = ad.creative.thumbnail_url.replace(/p\d+x\d+/, 'p480x480');
+            }
             ads.push({
               id: ad.id, name: ad.name, status: ad.status,
-              thumbnailUrl: ad.creative?.thumbnail_url || null,
+              thumbnailUrl: imageUrl || ad.creative?.thumbnail_url || null,
               title: ad.creative?.title || '',
               body: ad.creative?.body || '',
               impressions: imp, clicks: clk,

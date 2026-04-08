@@ -43,6 +43,12 @@ function defaultDates() {
   return { since: start.toISOString().split('T')[0], until: end.toISOString().split('T')[0] }
 }
 
+// Cost calculation helper
+function calcCost(impressions, spend, cpm, useMarkup) {
+  if (useMarkup) return Math.round((impressions / 1000) * cpm)
+  return Math.round(spend)
+}
+
 export default function MetaAds() {
   const { token } = useAuth()
   const [clients, setClients] = useState([])
@@ -57,6 +63,7 @@ export default function MetaAds() {
   const [tabData, setTabData] = useState({})
   const [tabLoading, setTabLoading] = useState({})
   const [tabError, setTabError] = useState({})
+  const [useMarkup, setUseMarkup] = useState(true)
 
   const { since: ds, until: du } = defaultDates()
   const [since, setSince] = useState(ds)
@@ -140,6 +147,7 @@ export default function MetaAds() {
   }, [activeTab, insights])
 
   const handleTabClick = (tab) => { setActiveTab(tab); fetchTab(tab) }
+  const cpm = parseFloat(settings.meta_cpm) || 7000
 
   return (
     <div className="meta-page">
@@ -170,6 +178,11 @@ export default function MetaAds() {
               <label>마크업 CPM</label>
               <input type="number" value={settings.meta_cpm || '7000'}
                 onChange={e => setSettings(s => ({ ...s, meta_cpm: e.target.value }))} />
+            </div>
+            <div className="markup-toggle" style={{ alignSelf: 'flex-end', marginBottom: 14 }}>
+              <span className="toggle-label">마크업 적용</span>
+              <div className={`toggle-switch ${useMarkup ? 'active' : ''}`}
+                onClick={() => setUseMarkup(!useMarkup)} />
             </div>
             <button onClick={saveSettings} className="btn btn-primary" disabled={saving}
               style={{ alignSelf: 'flex-end', marginBottom: 14 }}>
@@ -207,7 +220,7 @@ export default function MetaAds() {
 
       {insights && (
         <>
-          <SummaryCards insights={insights} />
+          <SummaryCards insights={insights} cpm={cpm} useMarkup={useMarkup} />
 
           <div className="m-tabs">
             {TABS.map(t => (
@@ -222,12 +235,12 @@ export default function MetaAds() {
             {!tabLoading[activeTab] && tabData[activeTab] && (
               <>
                 {activeTab === 'overview' && <OverviewTab data={tabData.overview} />}
-                {activeTab === 'placement' && <PlacementTab data={tabData.placement} />}
+                {activeTab === 'placement' && <PlacementTab data={tabData.placement} cpm={cpm} useMarkup={useMarkup} />}
                 {activeTab === 'demographics' && <DemographicsTab data={tabData.demographics} />}
-                {activeTab === 'region' && <RegionTab data={tabData.region} />}
+                {activeTab === 'region' && <RegionTab data={tabData.region} cpm={cpm} useMarkup={useMarkup} />}
                 {activeTab === 'actions' && <ActionsTab data={tabData.actions} />}
-                {activeTab === 'adsets' && <AdsetsTab data={tabData.adsets} />}
-                {activeTab === 'ads' && <AdsTab data={tabData.ads} cpm={insights.cpm} />}
+                {activeTab === 'adsets' && <AdsetsTab data={tabData.adsets} cpm={cpm} useMarkup={useMarkup} />}
+                {activeTab === 'ads' && <AdsTab data={tabData.ads} cpm={cpm} useMarkup={useMarkup} />}
               </>
             )}
           </div>
@@ -241,22 +254,27 @@ export default function MetaAds() {
   )
 }
 
-function SummaryCards({ insights }) {
+function SummaryCards({ insights, cpm, useMarkup }) {
+  const cost = useMarkup
+    ? Math.round((insights.impressions / 1000) * cpm)
+    : insights.actualSpend || 0
+  const cpcVal = insights.clicks > 0 ? Math.round(cost / insights.clicks) : 0
+
   const cards = [
     { icon: '👁', label: '노출수', value: insights.impressions.toLocaleString() },
     { icon: '👥', label: '도달', value: insights.reach.toLocaleString() },
     { icon: '🔄', label: '빈도', value: insights.frequency },
     { icon: '👆', label: '클릭수', value: insights.clicks.toLocaleString() },
     { icon: '📊', label: 'CTR', value: insights.ctr + '%' },
-    { icon: '💰', label: 'CPC', value: insights.cpc.toLocaleString() + '원', accent: true },
-    { icon: '💳', label: '전체비용', value: insights.totalCost.toLocaleString() + '원', accent: true },
+    { icon: '💰', label: 'CPC', value: cpcVal.toLocaleString() + '원', accent: true },
+    { icon: '💳', label: '전체비용', value: cost.toLocaleString() + '원', accent: true },
   ]
   return (
     <div className="m-summary">
       <div className="m-summary-meta">
         {insights.dateStart} ~ {insights.dateEnd}
-        <span className="m-cpm-badge">CPM {Number(insights.cpm).toLocaleString()}원</span>
-        {insights.campaignCount > 1 && <span className="m-cpm-badge">캠페인 {insights.campaignCount}개</span>}
+        {!useMarkup && <span className="m-cpm-badge">실비용</span>}
+        {insights.campaignCount > 1 && <span className="m-cpm-badge">캠페인 {insights.campaignCount}개 합산</span>}
       </div>
       <div className="m-summary-grid">
         {cards.map(c => (
@@ -334,17 +352,18 @@ function OverviewTab({ data }) {
   )
 }
 
-function PlacementTab({ data }) {
+function PlacementTab({ data, cpm, useMarkup }) {
   if (!data?.length) return <p className="m-empty">데이터가 없습니다.</p>
-  const totalSpend = data.reduce((s, r) => s + r.spend, 0)
+  const withCost = data.map(r => ({ ...r, cost: calcCost(r.impressions, r.spend, cpm, useMarkup) }))
+  const totalCost = withCost.reduce((s, r) => s + r.cost, 0)
   return (
     <table className="m-table">
       <thead>
         <tr><th>플랫폼</th><th>위치</th><th>노출수</th><th>클릭수</th><th>CTR</th><th>비용 (비중)</th></tr>
       </thead>
       <tbody>
-        {data.map((r, i) => {
-          const pct = totalSpend > 0 ? (r.spend / totalSpend) * 100 : 0
+        {withCost.map((r, i) => {
+          const pct = totalCost > 0 ? (r.cost / totalCost) * 100 : 0
           return (
             <tr key={i}>
               <td>{r.publisher_platform}</td>
@@ -354,7 +373,7 @@ function PlacementTab({ data }) {
               <td>{r.ctr}%</td>
               <td>
                 <div className="m-spend-cell">
-                  <span>${r.spend.toFixed(0)}</span>
+                  <span>{r.cost.toLocaleString()}원</span>
                   <div className="m-progress-track"><div className="m-progress-fill" style={{ width: pct + '%' }} /></div>
                 </div>
               </td>
@@ -403,7 +422,7 @@ function DemographicsTab({ data }) {
   )
 }
 
-function RegionTab({ data }) {
+function RegionTab({ data, cpm, useMarkup }) {
   if (!data?.length) return <p className="m-empty">데이터가 없습니다.</p>
   return (
     <table className="m-table">
@@ -415,7 +434,7 @@ function RegionTab({ data }) {
             <td>{r.impressions.toLocaleString()}</td>
             <td>{r.clicks.toLocaleString()}</td>
             <td>{r.ctr}%</td>
-            <td>${r.spend.toFixed(0)}</td>
+            <td>{calcCost(r.impressions, r.spend, cpm, useMarkup).toLocaleString()}원</td>
           </tr>
         ))}
       </tbody>
@@ -439,7 +458,7 @@ function ActionsTab({ data }) {
   )
 }
 
-function AdsetsTab({ data }) {
+function AdsetsTab({ data, cpm, useMarkup }) {
   if (!data?.length) return <p className="m-empty">광고세트 데이터가 없습니다.</p>
   return (
     <table className="m-table">
@@ -452,7 +471,7 @@ function AdsetsTab({ data }) {
             <td>{as.impressions.toLocaleString()}</td>
             <td>{as.clicks.toLocaleString()}</td>
             <td>{as.ctr}%</td>
-            <td>${as.spend.toFixed(0)}</td>
+            <td>{calcCost(as.impressions, as.spend, cpm, useMarkup).toLocaleString()}원</td>
           </tr>
         ))}
       </tbody>
@@ -460,14 +479,16 @@ function AdsetsTab({ data }) {
   )
 }
 
-function AdsTab({ data, cpm }) {
+function AdsTab({ data, cpm, useMarkup }) {
   if (!data?.length) return <p className="m-empty">소재 데이터가 없습니다.</p>
+  const [imgErrors, setImgErrors] = useState({})
   return (
     <div className="m-ads-grid">
       {data.map(ad => (
         <div key={ad.id} className="m-card m-ad-card">
-          {ad.thumbnailUrl ? (
-            <img src={ad.thumbnailUrl} alt="" className="m-ad-thumb" />
+          {ad.thumbnailUrl && !imgErrors[ad.id] ? (
+            <img src={ad.thumbnailUrl} alt="" className="m-ad-thumb" loading="lazy"
+              onError={() => setImgErrors(p => ({ ...p, [ad.id]: true }))} />
           ) : (
             <div className="m-ad-thumb m-ad-thumb-empty" />
           )}
@@ -478,6 +499,9 @@ function AdsTab({ data, cpm }) {
               <span>노출 {ad.impressions.toLocaleString()}</span>
               <span>클릭 {ad.clicks.toLocaleString()}</span>
               <span>CTR {ad.ctr}%</span>
+            </div>
+            <div className="m-ad-cost">
+              비용 {calcCost(ad.impressions, ad.spend, cpm, useMarkup).toLocaleString()}원
             </div>
             {ad.engagement > 0 && <div className="m-ad-engagement">게시물참여 {ad.engagement.toLocaleString()}</div>}
           </div>
