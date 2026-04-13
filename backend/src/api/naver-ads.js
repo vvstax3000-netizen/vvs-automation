@@ -110,19 +110,22 @@ router.get('/:clientId/insights', async (req, res) => {
 
     console.log(`[NaverAds] TOTAL: imp: ${totalImp} | click: ${totalClk} | cost: ${totalCost}`);
 
-    // 4. Top creatives from campaigns with most spend
-    const topCamps = campaignResults
-      .filter(c => c.cost > 0)
-      .sort((a, b) => b.cost - a.cost)
-      .slice(0, 3);
-
-    let topCreatives = [];
-    try {
-      topCreatives = await getTopCreatives(L, S, C,
-        topCamps.map(c => ({ nccCampaignId: c.id, name: c.name })),
-        since, until
-      );
-    } catch (e) { console.error('[NaverAds] Top creatives error:', e.message); }
+    // 4. Top creatives per type
+    const topCreatives = {};
+    for (const type of Object.keys(byType)) {
+      const typeCamps = campaignResults
+        .filter(c => c.type === type && c.cost > 0)
+        .sort((a, b) => b.cost - a.cost)
+        .slice(0, 3);
+      if (!typeCamps.length) continue;
+      try {
+        const creatives = await getTopCreatives(L, S, C,
+          typeCamps.map(c => ({ nccCampaignId: c.id, name: c.name })),
+          since, until
+        );
+        if (creatives.length) topCreatives[type] = creatives;
+      } catch (e) { console.error(`[NaverAds] Top creatives error (${type}):`, e.message); }
+    }
 
     res.json({
       campaigns: campaignResults,

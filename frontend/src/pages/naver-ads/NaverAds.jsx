@@ -141,35 +141,38 @@ export default function NaverAds() {
             })}
           </div>
 
-          {/* Top Creatives */}
-          {data.topCreatives?.length > 0 && (
-            <div className="n-creatives-section">
-              <h3>상위 소재 Top 3</h3>
-              <table className="data-table creative-table">
-                <thead>
-                  <tr><th>#</th><th>소재</th><th>노출수</th><th>클릭수</th><th>CTR</th></tr>
-                </thead>
-                <tbody>
-                  {data.topCreatives.map((c, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td className="creative-cell">
-                        <div className="creative-thumbs">
-                          {c.images?.length ? c.images.map((img, j) => (
-                            <img key={j} src={img} alt="" className="creative-thumb" />
-                          )) : <div className="creative-thumb creative-thumb-empty" />}
-                        </div>
-                        <span>{c.name}</span>
-                      </td>
-                      <td>{c.impressions.toLocaleString()}</td>
-                      <td>{c.clicks.toLocaleString()}</td>
-                      <td>{c.ctr}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Top Creatives by Type */}
+          {data.topCreatives && TYPE_ORDER
+            .filter(t => data.topCreatives[t]?.length > 0)
+            .map(t => (
+              <div key={t} className="n-creatives-section">
+                <h3><span className={`n-type-badge n-type-${t}`}>{TYPE_NAMES[t]}</span> 상위 소재 Top 3</h3>
+                <table className="data-table creative-table">
+                  <thead>
+                    <tr><th>#</th><th>소재</th><th>노출수</th><th>클릭수</th><th>CTR</th></tr>
+                  </thead>
+                  <tbody>
+                    {data.topCreatives[t].map((c, i) => (
+                      <tr key={i}>
+                        <td>{i + 1}</td>
+                        <td className="creative-cell">
+                          <div className="creative-thumbs">
+                            {c.images?.length ? c.images.map((img, j) => (
+                              <img key={j} src={img} alt="" className="creative-thumb" />
+                            )) : <div className="creative-thumb creative-thumb-empty" />}
+                          </div>
+                          <span>{c.name}</span>
+                        </td>
+                        <td>{c.impressions.toLocaleString()}</td>
+                        <td>{c.clicks.toLocaleString()}</td>
+                        <td>{c.ctr}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))
+          }
 
           {/* Campaign Accordion by Type */}
           {TYPE_ORDER.filter(t => data.campaigns.some(c => c.type === t)).map(type => {
