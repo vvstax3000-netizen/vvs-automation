@@ -161,7 +161,8 @@ export default function Reports() {
           </div>
 
           {currentReport && (
-            <ReportPreview report={currentReport} onUpdate={updateReport} onExport={exportNotion} />
+            <ReportPreview report={currentReport} onUpdate={updateReport} onExport={exportNotion}
+              clientName={clients.find(c => c.id === parseInt(selectedClientId))?.company_name || ''} />
           )}
         </>
       )}
@@ -210,9 +211,33 @@ export default function Reports() {
   )
 }
 
-function ReportPreview({ report, onUpdate, onExport }) {
+function ReportPreview({ report, onUpdate, onExport, clientName }) {
   const [imgIdx, setImgIdx] = useState(null)
+  const [showExtras, setShowExtras] = useState(false)
+  const [rewardTaps, setRewardTaps] = useState('')
+  const [channelsText, setChannelsText] = useState('')
+  const [keywordsText, setKeywordsText] = useState('')
+  const [prevWeekText, setPrevWeekText] = useState('')
+  const [memoText, setMemoText] = useState('')
+  const [copied, setCopied] = useState(false)
   const r = report
+
+  const copyPrompt = async () => {
+    const text = generatePromptText(r, clientName, {
+      rewardTaps: rewardTaps ? parseInt(rewardTaps) : 0,
+      channels: channelsText,
+      keywords: keywordsText,
+      prevWeek: prevWeekText,
+      memo: memoText
+    })
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (e) {
+      alert('클립보드 복사 실패: ' + e.message)
+    }
+  }
 
   const dashboard = [
     { icon: '🔍', label: '플레이스 유입', value: fmt(r.place_views) + '회', cls: 'r-c-views' },
@@ -356,8 +381,54 @@ function ReportPreview({ report, onUpdate, onExport }) {
         </div>
       )}
 
+      {/* Extras section for Claude prompt */}
+      <div className="r-extras-section">
+        <div className="r-extras-toggle" onClick={() => setShowExtras(!showExtras)}>
+          <span>{showExtras ? '▼' : '▶'}</span>
+          <span>추가 정보 입력 (선택사항)</span>
+        </div>
+        {showExtras && (
+          <div className="r-extras-body">
+            <div className="r-extras-row">
+              <div className="form-group" style={{ maxWidth: 200 }}>
+                <label>리워드 타수</label>
+                <input type="number" value={rewardTaps}
+                  onChange={e => setRewardTaps(e.target.value)} placeholder="예: 230" />
+              </div>
+            </div>
+            <div className="r-extras-row">
+              <div className="form-group">
+                <label>유입채널 (플레이스 기준, 한 줄에 하나)</label>
+                <textarea value={channelsText} onChange={e => setChannelsText(e.target.value)}
+                  rows={4} placeholder="인스타그램 1039&#10;네이버검색 599&#10;네이버지도 557&#10;페이스북 293" />
+              </div>
+              <div className="form-group">
+                <label>유입키워드 (플레이스 기준, 한 줄에 하나)</label>
+                <textarea value={keywordsText} onChange={e => setKeywordsText(e.target.value)}
+                  rows={4} placeholder="청천동맛집 90&#10;부평철판닭갈비 65&#10;홍춘천닭갈비 58" />
+              </div>
+            </div>
+            <div className="r-extras-row">
+              <div className="form-group">
+                <label>전주 데이터 (비교용)</label>
+                <textarea value={prevWeekText} onChange={e => setPrevWeekText(e.target.value)}
+                  rows={4} placeholder="매출 6648900&#10;방문객 156&#10;유입 2591&#10;광고비 242360" />
+              </div>
+              <div className="form-group">
+                <label>특이사항 메모</label>
+                <textarea value={memoText} onChange={e => setMemoText(e.target.value)}
+                  rows={4} placeholder="인플루언서 섭외 확정, 소재 교체 예정 등" />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Actions */}
       <div className="r-actions">
+        <button onClick={copyPrompt} className={`btn r-btn-copy ${copied ? 'copied' : ''}`}>
+          {copied ? '✅ 복사됨!' : '📋 프롬프트 복사'}
+        </button>
         <button onClick={onExport} className="btn btn-primary">노션 내보내기</button>
         <button className="btn" disabled>저장됨</button>
       </div>
@@ -462,4 +533,84 @@ function ActionList({ title, items, onSave }) {
       )}
     </div>
   )
+}
+
+function generatePromptText(r, clientName, extras) {
+  const { rewardTaps, channels, keywords, prevWeek, memo } = extras
+  const num = (n) => Number(n || 0).toLocaleString()
+
+  let text = `## ${clientName || '광고주'} 광고 효율 분석 (${r.period_start} ~ ${r.period_end})\n\n`
+  text += `아래 데이터를 분석해서 주간 광고 성과 보고서를 작성해줘.\n\n`
+  text += `### 분석 시 포함할 섹션:\n`
+  text += `1. 성과 대시보드 (요약 테이블)\n`
+  text += `2. 성과 포인트 요약 (3~5개, 전주 대비 변화 포함)\n`
+  text += `3. 최근 기간별 성과 비교 (전주 데이터가 있으면)\n`
+  text += `4. 채널별 성과 분석 (네이버 + 메타 각각 테이블 + 분석)\n`
+  text += `5. CAC 분석\n`
+  text += `6. 키워드 순위 및 노출 현황\n`
+  text += `7. 분석 요약 및 다음 주 액션 플랜\n\n`
+
+  text += `---\n\n`
+  text += `### 매출 데이터\n`
+  text += `- 매출: ${num(r.revenue)}원\n`
+  text += `- 방문객: ${num(r.visitors)}팀\n`
+  text += `- 객단가: ${num(r.unit_price)}원\n`
+  text += `- 플레이스 유입: ${num(r.place_views)}회\n`
+  text += `- 전환율: ${Number(r.conversion_rate || 0).toFixed(2)}%\n`
+  text += `- 스마트콜: ${num(r.smart_calls)}회\n`
+  text += `- 리뷰: ${num(r.review_count)}건\n`
+  text += `- 총 광고비: ${num(r.total_ad_cost)}원\n`
+  text += `- CAC: ${num(r.cac)}원\n`
+  text += `- ROAS: ${Math.round(r.roas || 0)}%\n`
+  if (rewardTaps > 0) {
+    text += `- 리워드 타수: ${num(rewardTaps)}타 (유입에서 제외해야 함)\n`
+    text += `- 실제 유입: ${num((r.place_views || 0) - rewardTaps)}회\n`
+  }
+  text += `\n`
+
+  text += `### 네이버 검색광고 데이터\n`
+  if (r.naver_campaigns_data?.length) {
+    text += `| 캠페인 | 노출수 | 클릭수 | 광고비 | CTR | CPC |\n`
+    text += `|--------|--------|--------|--------|-----|-----|\n`
+    r.naver_campaigns_data.forEach(c => {
+      text += `| ${c.name} | ${num(c.impCnt)} | ${num(c.clkCnt)} | ${num(c.salesAmt)}원 | ${c.ctr}% | ${num(c.cpc)}원 |\n`
+    })
+    const totalImp = r.naver_campaigns_data.reduce((s, c) => s + (c.impCnt || 0), 0)
+    const totalClk = r.naver_campaigns_data.reduce((s, c) => s + (c.clkCnt || 0), 0)
+    const totalCost = r.naver_campaigns_data.reduce((s, c) => s + (c.salesAmt || 0), 0)
+    text += `\n총계: 노출 ${num(totalImp)} / 클릭 ${num(totalClk)} / 광고비 ${num(totalCost)}원\n`
+  } else {
+    text += `데이터 없음\n`
+  }
+  text += `\n`
+
+  text += `### 메타 광고 데이터\n`
+  if (r.meta_campaigns_data?.length) {
+    text += `| 캠페인 | 노출수 | 클릭수 | 광고비 | CTR | CPC | 도달 |\n`
+    text += `|--------|--------|--------|--------|-----|-----|------|\n`
+    r.meta_campaigns_data.forEach(c => {
+      const cost = c.adCost || c.markupCost || 0
+      text += `| ${c.name} | ${num(c.impressions)} | ${num(c.clicks)} | ${num(cost)}원 | ${c.ctr}% | ${num(c.cpc)}원 | ${num(c.reach)} |\n`
+    })
+  } else {
+    text += `데이터 없음\n`
+  }
+  text += `\n`
+
+  text += `### 키워드 순위\n`
+  const kwLine = (arr) => arr.map(k => `${k.keyword}(${k.rank}위${k.volume ? ', 월' + num(k.volume) : ''})`).join(', ')
+  if (r.keyword_top?.length) text += `상위 노출 (1~5위): ${kwLine(r.keyword_top)}\n`
+  if (r.keyword_rising?.length) text += `상승 구간 (6~10위): ${kwLine(r.keyword_rising)}\n`
+  if (r.keyword_improve?.length) text += `개선 필요 (11위+): ${kwLine(r.keyword_improve)}\n`
+  text += `\n`
+
+  if (channels?.trim()) text += `### 유입채널 (플레이스 기준)\n${channels.trim()}\n\n`
+  if (keywords?.trim()) text += `### 유입키워드 (플레이스 기준)\n${keywords.trim()}\n\n`
+  if (prevWeek?.trim()) text += `### 전주 데이터 (비교용)\n${prevWeek.trim()}\n\n`
+  if (memo?.trim()) text += `### 특이사항\n${memo.trim()}\n\n`
+
+  text += `---\n`
+  text += `위 데이터를 바탕으로 상세한 주간 보고서를 작성해줘. 전주 대비 변화를 ▲▼로 표시하고, 각 지표에 대한 해석과 액션 플랜을 포함해줘.\n`
+
+  return text
 }
