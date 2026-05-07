@@ -12,6 +12,7 @@ const metaAdsRoutes = require('./api/meta-ads');
 const naverAdsRoutes = require('./api/naver-ads');
 const keywordDiscoveryRoutes = require('./api/keyword-discovery');
 const salesRoutes = require('./api/sales');
+const reportsRoutes = require('./api/reports');
 const path = require('path');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/meta-ads', metaAdsRoutes);
 app.use('/api/naver-ads', naverAdsRoutes);
 app.use('/api/keyword-discovery', keywordDiscoveryRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/uploads/sales', express.static(path.join(__dirname, '..', 'data', 'sales-images')));
 
 app.get('/api/health', (req, res) => {
