@@ -1,0 +1,139 @@
+.k-page { padding: 24px; }
+.k-desc { color: #6B7280; font-size: 0.85rem; margin-bottom: 16px; }
+
+/* Settings */
+.k-settings {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.k-settings .form-group { margin-bottom: 14px; }
+.k-settings select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  min-width: 300px;
+}
+
+/* Tag input */
+.k-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  min-height: 40px;
+  align-items: center;
+}
+.k-tag-container:focus-within { border-color: #4361ee; }
+
+.k-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #EEF2FF;
+  color: #3730A3;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.k-tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6366F1;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+.k-tag-remove:hover { color: #DC2626; }
+
+.k-tag-input {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  outline: none;
+  padding: 4px;
+  font-size: 0.9rem;
+  background: transparent;
+}
+
+/* Actions */
+.k-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.k-gen-count {
+  font-size: 0.85rem;
+  color: #4361ee;
+  font-weight: 500;
+}
+
+/* Progress */
+.k-progress-section {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.k-progress-text {
+  font-size: 0.9rem;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+.k-progress-bar {
+  height: 8px;
+  background: #F3F4F6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.k-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4361ee, #7C3AED);
+  transition: width 0.3s;
+}
+.k-loading {
+  color: #6B7280;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+/* Toolbar */
+.k-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.k-result-count {
+  font-size: 0.9rem;
+  color: #4B5563;
+}
+.k-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Table */
+.k-table td:nth-child(6) { font-weight: 600; }
+
+/* Rank badges */
+.k-rank-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.k-rank-top { background: #DCFCE7; color: #166534; }
+.k-rank-mid { background: #FEF3C7; color: #92400E; }
+.k-rank-low { background: #F3F4F6; color: #6B7280; }
+.k-rank-none { background: #FEE2E2; color: #991B1B; }

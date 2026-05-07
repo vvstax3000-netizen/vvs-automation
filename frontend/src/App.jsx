@@ -9,6 +9,7 @@ import ClientList from './pages/clients/ClientList'
 import ClientForm from './pages/clients/ClientForm'
 import Reports from './pages/reports/Reports'
 import RankTracker from './pages/rank-tracker/RankTracker'
+import KeywordDiscovery from './pages/keyword-discovery/KeywordDiscovery'
 import MetaAds from './pages/meta-ads/MetaAds'
 import NaverAds from './pages/naver-ads/NaverAds'
 import Sales from './pages/sales/Sales'
@@ -39,6 +40,7 @@ function App() {
           <Route path="clients/:id/edit" element={<ClientForm />} />
           <Route path="reports" element={<Reports />} />
           <Route path="rank-tracker" element={<RankTracker />} />
+          <Route path="keyword-discovery" element={<KeywordDiscovery />} />
           <Route path="meta-ads" element={<MetaAds />} />
           <Route path="naver-ads" element={<NaverAds />} />
           <Route path="sales" element={<Sales />} />

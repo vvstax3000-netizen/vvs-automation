@@ -7,6 +7,7 @@ const menuItems = [
   { path: '/dashboard/clients', label: '광고주 관리' },
   { path: '/dashboard/reports', label: '보고서 관리' },
   { path: '/dashboard/rank-tracker', label: '플레이스 순위 추적' },
+  { path: '/dashboard/keyword-discovery', label: '키워드 발굴' },
   { path: '/dashboard/meta-ads', label: '메타 광고' },
   { path: '/dashboard/naver-ads', label: '네이버 검색광고' },
   { path: '/dashboard/sales', label: '매출 데이터' },
