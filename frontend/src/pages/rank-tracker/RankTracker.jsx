@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import KeywordManager from './KeywordManager'
 import './RankTracker.css'
 
@@ -9,7 +10,7 @@ export default function RankTracker() {
   const { token } = useAuth()
 
   useEffect(() => {
-    fetch('/api/clients', {
+    fetch(apiUrl('/api/clients'), {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())

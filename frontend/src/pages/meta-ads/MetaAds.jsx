@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './MetaAds.css'
 
 const TABS = [
@@ -76,8 +77,8 @@ export default function MetaAds() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/clients', { headers }).then(r => r.json()),
-      fetch('/api/settings', { headers }).then(r => r.json())
+      fetch(apiUrl('/api/clients'), { headers }).then(r => r.json()),
+      fetch(apiUrl('/api/settings'), { headers }).then(r => r.json())
     ]).then(([c, s]) => {
       setClients(c)
       setSettings(prev => ({ ...prev, ...s }))
@@ -88,7 +89,7 @@ export default function MetaAds() {
   const saveSettings = async () => {
     setSaving(true)
     try {
-      await fetch('/api/settings', {
+      await fetch(apiUrl('/api/settings'), {
         method: 'PUT', headers: jsonHeaders,
         body: JSON.stringify({ meta_api_token: settings.meta_api_token, meta_ad_account_id: settings.meta_ad_account_id, meta_cpm: settings.meta_cpm })
       })
@@ -100,7 +101,7 @@ export default function MetaAds() {
     if (!selectedClientId) return
     setLoading(true); setError(''); setInsights(null); setTabData({}); setTabError({})
     try {
-      const res = await fetch(`${base}/insights?${qs}`, { headers })
+      const res = await fetch(apiUrl(`${base}/insights?${qs}`), { headers })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setInsights(data)
@@ -121,18 +122,18 @@ export default function MetaAds() {
       switch (tab) {
         case 'overview': {
           const [platform, device] = await Promise.all([
-            fetch(`${base}/breakdowns?${qs}&type=platform`, { headers }).then(r => r.json()),
-            fetch(`${base}/breakdowns?${qs}&type=device`, { headers }).then(r => r.json()),
+            fetch(apiUrl(`${base}/breakdowns?${qs}&type=platform`), { headers }).then(r => r.json()),
+            fetch(apiUrl(`${base}/breakdowns?${qs}&type=device`), { headers }).then(r => r.json()),
           ])
           setTabData(p => ({ ...p, overview: { platform, device } }))
           return
         }
-        case 'placement': url = `${base}/breakdowns?${qs}&type=placement`; break
-        case 'demographics': url = `${base}/breakdowns?${qs}&type=age_gender`; break
-        case 'region': url = `${base}/breakdowns?${qs}&type=region`; break
-        case 'actions': url = `${base}/actions?${qs}`; break
-        case 'adsets': url = `${base}/adsets?${qs}`; break
-        case 'ads': url = `${base}/ads?${qs}`; break
+        case 'placement': url = apiUrl(`${base}/breakdowns?${qs}&type=placement`); break
+        case 'demographics': url = apiUrl(`${base}/breakdowns?${qs}&type=age_gender`); break
+        case 'region': url = apiUrl(`${base}/breakdowns?${qs}&type=region`); break
+        case 'actions': url = apiUrl(`${base}/actions?${qs}`); break
+        case 'adsets': url = apiUrl(`${base}/adsets?${qs}`); break
+        case 'ads': url = apiUrl(`${base}/ads?${qs}`); break
       }
       const res = await fetch(url, { headers })
       const data = await res.json()

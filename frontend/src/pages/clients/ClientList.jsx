@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './Clients.css'
 
 export default function ClientList() {
@@ -10,7 +11,7 @@ export default function ClientList() {
 
   const fetchClients = async () => {
     try {
-      const res = await fetch('/api/clients', {
+      const res = await fetch(apiUrl('/api/clients'), {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -28,7 +29,7 @@ export default function ClientList() {
   const handleDelete = async (id, name) => {
     if (!confirm(`"${name}" 광고주를 삭제하시겠습니까?`)) return
     try {
-      await fetch(`/api/clients/${id}`, {
+      await fetch(apiUrl(`/api/clients/${id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './KeywordDiscovery.css'
 
 const DEFAULT_LOCATIONS = ['부평', '청천동', '청천', '산곡역', '인천부평', '부평구']
@@ -32,7 +33,7 @@ export default function KeywordDiscovery() {
   const jsonHeaders = { ...headers, 'Content-Type': 'application/json' }
 
   useEffect(() => {
-    fetch('/api/clients', { headers })
+    fetch(apiUrl('/api/clients'), { headers })
       .then(r => r.json())
       .then(list => setClients(list.filter(c => c.place_name)))
       .catch(console.error)
@@ -44,15 +45,15 @@ export default function KeywordDiscovery() {
 
   useEffect(() => {
     if (!selectedClientId) { setClient(null); return }
-    fetch(`/api/clients/${selectedClientId}`, { headers })
+    fetch(apiUrl(`/api/clients/${selectedClientId}`), { headers })
       .then(r => r.json()).then(setClient)
-    fetch(`/api/keyword-discovery/${selectedClientId}/preset`, { headers })
+    fetch(apiUrl(`/api/keyword-discovery/${selectedClientId}/preset`), { headers })
       .then(r => r.json()).then(p => {
         setLocations(p.locations?.length ? p.locations : DEFAULT_LOCATIONS)
         setMenus(p.menus?.length ? p.menus : DEFAULT_MENUS)
         setBrandKeywords(p.brandKeywords || [])
       })
-    fetch(`/api/keyword-discovery/${selectedClientId}/results`, { headers })
+    fetch(apiUrl(`/api/keyword-discovery/${selectedClientId}/results`), { headers })
       .then(r => r.json()).then(setRankResults)
   }, [selectedClientId])
 
@@ -60,7 +61,7 @@ export default function KeywordDiscovery() {
     if (!selectedClientId) return setError('광고주를 선택해주세요')
     setError('')
     try {
-      const res = await fetch('/api/keyword-discovery/generate', {
+      const res = await fetch(apiUrl('/api/keyword-discovery/generate'), {
         method: 'POST', headers: jsonHeaders,
         body: JSON.stringify({ clientId: selectedClientId, locations, menus, brandKeywords })
       })
@@ -73,7 +74,7 @@ export default function KeywordDiscovery() {
   const fetchSearchVolume = async (top10Keywords) => {
     setVolumeLoading(true)
     try {
-      const res = await fetch('/api/keyword-discovery/search-volume', {
+      const res = await fetch(apiUrl('/api/keyword-discovery/search-volume'), {
         method: 'POST', headers: jsonHeaders,
         body: JSON.stringify({ clientId: selectedClientId, keywords: top10Keywords })
       })
@@ -105,7 +106,7 @@ export default function KeywordDiscovery() {
     setProgress({ current: 0, total: generatedKeywords.length })
 
     try {
-      const res = await fetch('/api/keyword-discovery/start-check', {
+      const res = await fetch(apiUrl('/api/keyword-discovery/start-check'), {
         method: 'POST', headers: jsonHeaders,
         body: JSON.stringify({
           clientId: selectedClientId,
@@ -121,7 +122,7 @@ export default function KeywordDiscovery() {
       const poll = async () => {
         try {
           const statusRes = await fetch(
-            `/api/keyword-discovery/check-status/${data.jobId}?lastIndex=${lastIndex}`,
+            apiUrl(`/api/keyword-discovery/check-status/${data.jobId}?lastIndex=${lastIndex}`),
             { headers }
           )
           const status = await statusRes.json()
@@ -173,7 +174,7 @@ export default function KeywordDiscovery() {
   const stopRankCheck = async () => {
     if (currentJobId) {
       try {
-        await fetch(`/api/keyword-discovery/stop-check/${currentJobId}`, {
+        await fetch(apiUrl(`/api/keyword-discovery/stop-check/${currentJobId}`), {
           method: 'POST', headers
         })
       } catch {}

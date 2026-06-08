@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import RankHistory from './RankHistory'
 
 function RankChange({ current, previous }) {
@@ -34,7 +35,7 @@ export default function KeywordManager({ clientId }) {
   }, [clientId])
 
   const fetchClient = async () => {
-    const res = await fetch(`/api/clients/${clientId}`, { headers })
+    const res = await fetch(apiUrl(`/api/clients/${clientId}`), { headers })
     if (res.ok) {
       const data = await res.json()
       setClient(data)
@@ -44,19 +45,19 @@ export default function KeywordManager({ clientId }) {
   }
 
   const fetchKeywords = async () => {
-    const res = await fetch(`/api/rank-tracker/${clientId}/keywords`, { headers })
+    const res = await fetch(apiUrl(`/api/rank-tracker/${clientId}/keywords`), { headers })
     if (res.ok) setKeywords(await res.json())
   }
 
   const fetchReviewStats = async () => {
-    const res = await fetch(`/api/rank-tracker/${clientId}/review-stats`, { headers })
+    const res = await fetch(apiUrl(`/api/rank-tracker/${clientId}/review-stats`), { headers })
     if (res.ok) setReviewStats(await res.json())
   }
 
   const addKeywords = async () => {
     if (!newKeyword.trim()) return
     const kws = newKeyword.split(',').map(k => k.trim()).filter(Boolean)
-    const res = await fetch(`/api/rank-tracker/${clientId}/keywords`, {
+    const res = await fetch(apiUrl(`/api/rank-tracker/${clientId}/keywords`), {
       method: 'POST', headers: jsonHeaders,
       body: JSON.stringify({ keywords: kws })
     })
@@ -68,12 +69,12 @@ export default function KeywordManager({ clientId }) {
 
   const deleteKeyword = async (id) => {
     if (!confirm('키워드를 삭제하시겠습니까?')) return
-    await fetch(`/api/rank-tracker/keywords/${id}`, { method: 'DELETE', headers })
+    await fetch(apiUrl(`/api/rank-tracker/keywords/${id}`), { method: 'DELETE', headers })
     fetchKeywords()
   }
 
   const saveMemo = async (id, memo) => {
-    await fetch(`/api/rank-tracker/keywords/${id}/memo`, {
+    await fetch(apiUrl(`/api/rank-tracker/keywords/${id}/memo`), {
       method: 'PUT', headers: jsonHeaders,
       body: JSON.stringify({ memo })
     })
@@ -85,7 +86,7 @@ export default function KeywordManager({ clientId }) {
     if (!placeName) return alert('플레이스명을 먼저 설정해주세요')
     setRefreshing(true)
     try {
-      const res = await fetch(`/api/rank-tracker/${clientId}/refresh`, {
+      const res = await fetch(apiUrl(`/api/rank-tracker/${clientId}/refresh`), {
         method: 'POST', headers
       })
       const data = await res.json()
@@ -98,7 +99,7 @@ export default function KeywordManager({ clientId }) {
 
   const fetchSearchVolume = async () => {
     try {
-      const res = await fetch(`/api/rank-tracker/${clientId}/search-volume`, {
+      const res = await fetch(apiUrl(`/api/rank-tracker/${clientId}/search-volume`), {
         method: 'POST', headers
       })
       const data = await res.json()
@@ -113,7 +114,7 @@ export default function KeywordManager({ clientId }) {
     if (!client) return
     setSaving(true)
     try {
-      const res = await fetch(`/api/clients/${clientId}`, {
+      const res = await fetch(apiUrl(`/api/clients/${clientId}`), {
         method: 'PUT', headers: jsonHeaders,
         body: JSON.stringify({ ...client, place_name: placeName, slug })
       })

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiUrl } from '../../utils/api'
 
 export default function RankHistory({ keywordId, keyword, onClose, token, isPublic, slug }) {
   const [records, setRecords] = useState([])
@@ -6,8 +7,8 @@ export default function RankHistory({ keywordId, keyword, onClose, token, isPubl
 
   useEffect(() => {
     const url = isPublic
-      ? `/api/public/rank/${slug}/keywords/${keywordId}/history`
-      : `/api/rank-tracker/keywords/${keywordId}/history`
+      ? apiUrl(`/api/public/rank/${slug}/keywords/${keywordId}/history`)
+      : apiUrl(`/api/rank-tracker/keywords/${keywordId}/history`)
 
     const headers = isPublic ? {} : { Authorization: `Bearer ${token}` }
 

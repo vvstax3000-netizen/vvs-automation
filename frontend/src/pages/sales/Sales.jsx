@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './Sales.css'
 
 const TREND_TABS = [
@@ -56,7 +57,7 @@ export default function Sales() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetch('/api/clients', { headers })
+    fetch(apiUrl('/api/clients'), { headers })
       .then(r => r.json()).then(setClients).catch(console.error)
   }, [])
 
@@ -66,7 +67,7 @@ export default function Sales() {
   }, [selectedClientId])
 
   const fetchRecords = async () => {
-    const res = await fetch(`/api/sales/${selectedClientId}`, { headers })
+    const res = await fetch(apiUrl(`/api/sales/${selectedClientId}`), { headers })
     if (res.ok) {
       const data = await res.json()
       setRecords(data.records || [])
@@ -107,8 +108,8 @@ export default function Sales() {
     setError('')
     try {
       const url = editingId
-        ? `/api/sales/${selectedClientId}/${editingId}`
-        : `/api/sales/${selectedClientId}`
+        ? apiUrl(`/api/sales/${selectedClientId}/${editingId}`)
+        : apiUrl(`/api/sales/${selectedClientId}`)
       const method = editingId ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -124,7 +125,7 @@ export default function Sales() {
       for (const file of pendingImages) {
         const fd = new FormData()
         fd.append('image', file)
-        await fetch(`/api/sales/${selectedClientId}/${recordId}/images`, {
+        await fetch(apiUrl(`/api/sales/${selectedClientId}/${recordId}/images`), {
           method: 'POST', headers, body: fd
         })
       }
@@ -139,12 +140,12 @@ export default function Sales() {
 
   const deleteRecord = async (id) => {
     if (!confirm('이 데이터를 삭제하시겠습니까?')) return
-    await fetch(`/api/sales/${selectedClientId}/${id}`, { method: 'DELETE', headers })
+    await fetch(apiUrl(`/api/sales/${selectedClientId}/${id}`), { method: 'DELETE', headers })
     fetchRecords()
   }
 
   const refreshAdCost = async (id) => {
-    const res = await fetch(`/api/sales/${selectedClientId}/${id}/refresh-adcost`, {
+    const res = await fetch(apiUrl(`/api/sales/${selectedClientId}/${id}/refresh-adcost`), {
       method: 'POST', headers
     })
     if (res.ok) fetchRecords()
@@ -152,7 +153,7 @@ export default function Sales() {
 
   const toggleMarkup = async (record) => {
     const newUseMarkup = !record.use_markup
-    await fetch(`/api/sales/${selectedClientId}/${record.id}`, {
+    await fetch(apiUrl(`/api/sales/${selectedClientId}/${record.id}`), {
       method: 'PUT', headers: jsonHeaders,
       body: JSON.stringify({ useMarkup: newUseMarkup })
     })
@@ -160,7 +161,7 @@ export default function Sales() {
   }
 
   const openGallery = async (record) => {
-    const res = await fetch(`/api/sales/${selectedClientId}/${record.id}`, { headers })
+    const res = await fetch(apiUrl(`/api/sales/${selectedClientId}/${record.id}`), { headers })
     if (!res.ok) return
     const data = await res.json()
     setGalleryRecord(record)
@@ -170,7 +171,7 @@ export default function Sales() {
 
   const deleteImage = async (imgId) => {
     if (!galleryRecord) return
-    await fetch(`/api/sales/${selectedClientId}/${galleryRecord.id}/images/${imgId}`, {
+    await fetch(apiUrl(`/api/sales/${selectedClientId}/${galleryRecord.id}/images/${imgId}`), {
       method: 'DELETE', headers
     })
     setGalleryImages(prev => prev.filter(i => i.id !== imgId))
@@ -479,7 +480,7 @@ function ImageGallery({ record, images, index, setIndex, onClose, onDelete }) {
     )
   }
   const img = images[index]
-  const url = `/uploads/sales/${record.client_id}/${record.id}/${encodeURIComponent(img.filename)}`
+  const url = apiUrl(`/uploads/sales/${record.client_id}/${record.id}/${encodeURIComponent(img.filename)}`)
 
   return (
     <div className="s-modal-overlay" onClick={onClose}>

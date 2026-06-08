@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { apiUrl } from '../../utils/api'
 import RankHistory from '../rank-tracker/RankHistory'
 import '../rank-tracker/RankTracker.css'
 import './RankView.css'
@@ -13,7 +14,7 @@ export default function RankView() {
   const [historyKeyword, setHistoryKeyword] = useState(null)
 
   useEffect(() => {
-    fetch(`/api/public/rank/${clientSlug}`)
+    fetch(apiUrl(`/api/public/rank/${clientSlug}`))
       .then(res => {
         if (!res.ok) throw new Error('페이지를 찾을 수 없습니다')
         return res.json()

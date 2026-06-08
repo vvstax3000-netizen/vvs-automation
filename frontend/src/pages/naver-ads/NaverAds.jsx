@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './NaverAds.css'
 
 const TYPE_ORDER = ['place', 'smb', 'powerlink', 'powercontents', 'shopping', 'other']
@@ -32,7 +33,7 @@ export default function NaverAds() {
   const headers = { Authorization: `Bearer ${token}` }
 
   useEffect(() => {
-    fetch('/api/clients', { headers }).then(r => r.json()).then(setClients).catch(console.error)
+    fetch(apiUrl('/api/clients'), { headers }).then(r => r.json()).then(setClients).catch(console.error)
   }, [])
 
   const fetchData = async () => {
@@ -41,7 +42,7 @@ export default function NaverAds() {
     setExpandedCampaigns({}); setExpandedTypes({})
     try {
       const res = await fetch(
-        `/api/naver-ads/${selectedClientId}/insights?since=${since}&until=${until}`, { headers })
+        apiUrl(`/api/naver-ads/${selectedClientId}/insights?since=${since}&until=${until}`), { headers })
       const result = await res.json()
       if (!res.ok) throw new Error(result.error)
       setData(result)

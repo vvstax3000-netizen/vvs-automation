@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './Reports.css'
 
 const TABS = [
@@ -46,13 +47,13 @@ export default function Reports() {
   const jsonHeaders = { ...headers, 'Content-Type': 'application/json' }
 
   useEffect(() => {
-    fetch('/api/clients', { headers })
+    fetch(apiUrl('/api/clients'), { headers })
       .then(r => r.json()).then(setClients).catch(console.error)
   }, [])
 
   useEffect(() => {
     if (!selectedClientId) { setReports([]); return }
-    fetch(`/api/reports/${selectedClientId}`, { headers })
+    fetch(apiUrl(`/api/reports/${selectedClientId}`), { headers })
       .then(r => r.json()).then(d => setReports(d.reports || []))
   }, [selectedClientId, currentReport])
 
@@ -62,7 +63,7 @@ export default function Reports() {
     setGenerating(true)
     setCurrentReport(null)
     try {
-      const res = await fetch(`/api/reports/${selectedClientId}/generate`, {
+      const res = await fetch(apiUrl(`/api/reports/${selectedClientId}/generate`), {
         method: 'POST', headers: jsonHeaders,
         body: JSON.stringify({ periodStart, periodEnd, periodType })
       })
@@ -74,7 +75,7 @@ export default function Reports() {
   }
 
   const viewReport = async (id) => {
-    const res = await fetch(`/api/reports/${selectedClientId}/${id}`, { headers })
+    const res = await fetch(apiUrl(`/api/reports/${selectedClientId}/${id}`), { headers })
     if (res.ok) {
       const data = await res.json()
       setCurrentReport(data.report)
@@ -84,14 +85,14 @@ export default function Reports() {
 
   const deleteReport = async (id) => {
     if (!confirm('보고서를 삭제하시겠습니까?')) return
-    await fetch(`/api/reports/${selectedClientId}/${id}`, { method: 'DELETE', headers })
+    await fetch(apiUrl(`/api/reports/${selectedClientId}/${id}`), { method: 'DELETE', headers })
     setReports(reports.filter(r => r.id !== id))
     if (currentReport?.id === id) setCurrentReport(null)
   }
 
   const updateReport = async (fields) => {
     if (!currentReport) return
-    const res = await fetch(`/api/reports/${selectedClientId}/${currentReport.id}`, {
+    const res = await fetch(apiUrl(`/api/reports/${selectedClientId}/${currentReport.id}`), {
       method: 'PUT', headers: jsonHeaders,
       body: JSON.stringify(fields)
     })

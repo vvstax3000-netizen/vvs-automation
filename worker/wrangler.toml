@@ -1,0 +1,24 @@
+name = "vvs-api"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "vvs-db"
+database_id = "ff1c7617-ccb2-493c-938b-524f1dba98cf"
+
+# R2 Bucket (이미지 업로드용 - 나중에 추가)
+# [[r2_buckets]]
+# binding = "IMAGES"
+# bucket_name = "vvs-images"
+
+# Environment variables
+[vars]
+JWT_SECRET = "vvs-secret-key-change-in-production"
+CORS_ORIGIN = "*"
+
+# Cron trigger (매일 15:00 KST = 06:00 UTC)
+[triggers]
+crons = ["0 6 * * *"]

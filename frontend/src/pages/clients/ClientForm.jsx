@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { apiUrl } from '../../utils/api'
 import './Clients.css'
 
 const initialForm = {
@@ -22,7 +23,7 @@ export default function ClientForm() {
 
   useEffect(() => {
     if (isEdit) {
-      fetch(`/api/clients/${id}`, {
+      fetch(apiUrl(`/api/clients/${id}`), {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -48,7 +49,7 @@ export default function ClientForm() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch(isEdit ? `/api/clients/${id}` : '/api/clients', {
+      const res = await fetch(isEdit ? apiUrl(`/api/clients/${id}`) : apiUrl('/api/clients'), {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',

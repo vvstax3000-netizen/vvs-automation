@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const { getDb } = require('./db/schema');
+const bcrypt = require('bcryptjs');
+const { getDb, queryOne, run } = require('./db/schema');
 const { startCron } = require('./services/cron');
 
 const authRoutes = require('./api/auth');
@@ -39,6 +40,12 @@ app.get('/api/health', (req, res) => {
 
 async function start() {
   await getDb();
+  // 최초 배포 시 계정이 하나도 없으면 기본 관리자 계정 자동 생성.
+  // (아이디: admin / 비밀번호: admin1234 — 로그인 후 반드시 변경하세요)
+  if (!queryOne('SELECT id FROM users LIMIT 1')) {
+    run('INSERT INTO users (username, password) VALUES (?, ?)', ['admin', bcrypt.hashSync('admin1234', 10)]);
+    console.log('기본 admin 계정 생성됨 (비밀번호: admin1234) — 반드시 변경하세요');
+  }
   startCron();
   app.listen(PORT, () => {
     console.log(`VVS Backend running on http://localhost:${PORT}`);

@@ -1,0 +1,19 @@
+{
+  "name": "vvs-api-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "d1:create": "wrangler d1 create vvs-db",
+    "d1:migrate": "wrangler d1 migrations apply vvs-db",
+    "d1:migrate:local": "wrangler d1 migrations apply vvs-db --local"
+  },
+  "dependencies": {
+    "hono": "^4.4.0",
+    "@tsndr/cloudflare-worker-jwt": "^3.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.0"
+  }
+}
