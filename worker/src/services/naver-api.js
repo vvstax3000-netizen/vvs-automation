@@ -7,33 +7,39 @@ import { naverHeaders } from './crypto.js';
 // 캠페인 유형 분류
 // ──────────────────────────────────────────────
 
+// campaignTp 코드 → 프론트엔드/라우트가 사용하는 영문 유형 키
 export const CAMPAIGN_TYPES = {
-  POWER_LINK: '파워링크',
-  SHOPPING: '쇼핑검색',
-  POWER_CONTENT: '파워컨텐츠',
-  BRAND_SEARCH: '브랜드검색',
-  PLACE: '플레이스',
-  DISPLAY: '디스플레이',
-  UNKNOWN: '기타',
+  'WEB_SITE': 'powerlink',
+  'SHOPPING': 'shopping',
+  'POWER_CONTENTS': 'powercontents',
+  'PLACE': 'place',
+  'BRAND_SEARCH': 'smb',
+  // Legacy numeric codes
+  '1': 'powerlink',
+  '2': 'shopping',
+  '4': 'powercontents',
+  '5': 'place',
+  '6': 'smb',
 };
 
 /**
- * 캠페인 객체로부터 유형 분류
+ * 캠페인 객체로부터 유형 분류 (영문 키 반환: place/powerlink/smb/shopping/powercontents/other)
  * @param {object} campaign
  * @returns {string}
  */
 export function classifyCampaignType(campaign) {
-  const type = (campaign.campaignTp || campaign.campaignType || '').toUpperCase();
-  const name = (campaign.name || '').toLowerCase();
+  // 이름 기반 우선 분류 (예: "지역소상공인" 캠페인은 campaignTp가 PLACE라도 SMB로 취급)
+  const name = (campaign.name || '');
+  if (name.includes('소상공인') || name.includes('지역소상공인')) return 'smb';
 
-  if (type === 'WEB_SITE' || type === 'WEBSITE') return CAMPAIGN_TYPES.POWER_LINK;
-  if (type === 'SHOPPING') return CAMPAIGN_TYPES.SHOPPING;
-  if (type === 'POWER_CONTENTS' || type === 'CONTENT') return CAMPAIGN_TYPES.POWER_CONTENT;
-  if (type === 'BRAND_SEARCH' || type === 'BRAND') return CAMPAIGN_TYPES.BRAND_SEARCH;
-  if (type === 'PLACE' || name.includes('플레이스')) return CAMPAIGN_TYPES.PLACE;
-  if (type === 'DISPLAY') return CAMPAIGN_TYPES.DISPLAY;
+  const typeCode = String(campaign.campaignTp || campaign.campaignType || '');
+  if (CAMPAIGN_TYPES[typeCode]) return CAMPAIGN_TYPES[typeCode];
 
-  return CAMPAIGN_TYPES.UNKNOWN;
+  // Fallback
+  const lower = name.toLowerCase();
+  if (lower.includes('플레이스') || lower.includes('place')) return 'place';
+  if (lower.includes('파워링크') || lower.includes('powerlink')) return 'powerlink';
+  return 'other';
 }
 
 // ──────────────────────────────────────────────
@@ -172,34 +178,29 @@ export async function getCampaigns(apiLicense, apiSecret, customerId) {
 export async function getAdStats(apiLicense, apiSecret, customerId, campaignIds, since, until) {
   if (!campaignIds || campaignIds.length === 0) return [];
 
+  const fields = JSON.stringify(['impCnt', 'clkCnt', 'salesAmt', 'ctr', 'cpc']);
+  const timeRange = JSON.stringify({ since, until });
   const results = [];
 
-  for (const campaignId of campaignIds) {
+  for (const id of campaignIds) {
     try {
-      const data = await naverApiCall(
-        'GET',
-        `/stats`,
-        apiLicense,
-        apiSecret,
-        customerId,
-        {
-          id: campaignId,
-          fields: JSON.stringify([
-            'impCnt', 'clkCnt', 'salesAmt', 'ctr', 'cpc',
-            'avgRnk', 'ccnt', 'crto', 'convAmt', 'ror',
-          ]),
-          timeRange: JSON.stringify({ since, until }),
-          datePreset: 'custom',
-        }
-      );
+      const data = await naverApiCall('GET', '/stats', apiLicense, apiSecret, customerId, {
+        id,
+        fields,
+        timeRange,
+      });
 
-      if (data && Array.isArray(data.data)) {
-        results.push(...data.data.map((row) => ({ ...row, campaignId })));
-      } else if (data) {
-        results.push({ ...data, campaignId });
+      // 기간 내 일별 데이터를 하나로 합산
+      const days = Array.isArray(data?.data) ? data.data : (data ? [data] : []);
+      let impCnt = 0, clkCnt = 0, salesAmt = 0;
+      for (const d of days) {
+        impCnt += d.impCnt || 0;
+        clkCnt += d.clkCnt || 0;
+        salesAmt += d.salesAmt || 0;
       }
+      results.push({ id, impCnt, clkCnt, salesAmt });
     } catch (err) {
-      console.error(`[NaverAPI] 캠페인 ${campaignId} 통계 조회 실패:`, err.message);
+      console.error(`[NaverAPI] 캠페인 ${id} 통계 조회 실패:`, err.message);
     }
   }
 
@@ -259,34 +260,28 @@ export async function getAds(apiLicense, apiSecret, customerId, adGroupId) {
 export async function getAdCreativeStats(apiLicense, apiSecret, customerId, adIds, since, until) {
   if (!adIds || adIds.length === 0) return [];
 
+  const fields = JSON.stringify(['impCnt', 'clkCnt', 'salesAmt']);
+  const timeRange = JSON.stringify({ since, until });
   const results = [];
 
-  for (const adId of adIds) {
+  for (const id of adIds) {
     try {
-      const data = await naverApiCall(
-        'GET',
-        `/stats`,
-        apiLicense,
-        apiSecret,
-        customerId,
-        {
-          id: adId,
-          fields: JSON.stringify([
-            'impCnt', 'clkCnt', 'salesAmt', 'ctr', 'cpc',
-            'avgRnk', 'ccnt', 'crto', 'convAmt', 'ror',
-          ]),
-          timeRange: JSON.stringify({ since, until }),
-          datePreset: 'custom',
-        }
-      );
+      const data = await naverApiCall('GET', '/stats', apiLicense, apiSecret, customerId, {
+        id,
+        fields,
+        timeRange,
+      });
 
-      if (data && Array.isArray(data.data)) {
-        results.push(...data.data.map((row) => ({ ...row, adId })));
-      } else if (data) {
-        results.push({ ...data, adId });
+      const days = Array.isArray(data?.data) ? data.data : (data ? [data] : []);
+      let impCnt = 0, clkCnt = 0, salesAmt = 0;
+      for (const d of days) {
+        impCnt += d.impCnt || 0;
+        clkCnt += d.clkCnt || 0;
+        salesAmt += d.salesAmt || 0;
       }
+      results.push({ id, impCnt, clkCnt, salesAmt });
     } catch (err) {
-      console.error(`[NaverAPI] 광고 ${adId} 통계 조회 실패:`, err.message);
+      console.error(`[NaverAPI] \uad11\uace0 ${id} \ud1b5\uacc4 \uc870\ud68c \uc2e4\ud328:`, err.message);
     }
   }
 
